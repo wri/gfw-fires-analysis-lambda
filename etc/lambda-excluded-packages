@@ -1,0 +1,11 @@
+boto3*
+botocore*
+pip*
+docutils*
+*.pyc
+setuptools*
+wheel*
+coverage*
+testfixtures*
+mock*
+Cython*
