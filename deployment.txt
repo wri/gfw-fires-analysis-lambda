@@ -1,0 +1,6 @@
+1. Clone locally
+2. Create a .env file with AWS access/secret key info and an ENVIRONMENT setting
+3. Build the image - pulling it locally + pip installing requirements `docker-compose build`
+4. Test the code `docker-compose run test` 
+5. Package - `docker-compose run package`
+6. Deploy `serverless deploy -v`

@@ -1,0 +1,5 @@
+.env
+*.pyc
+lambda-deploy.zip
+.serverless/*
+lambda/lib/

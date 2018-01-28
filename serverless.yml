@@ -1,0 +1,29 @@
+service: palm-risk-poc 
+
+provider:
+  name: aws
+  runtime: python2.7
+  timeout: 300
+  profile: palm
+  memorySize: 3008
+  region: 'us-east-1'
+  role: arn:aws:iam::838255262149:role/lambda_basic_execution
+  deploymentBucket: palm-risk-poc
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+         - "s3:*"
+      Resource:
+         - 'arn:aws:s3:::palm-risk-poc'
+
+package:
+  artifact: lambda-deploy.zip
+
+functions:
+  fire-alerts:
+    handler: lambda_handler.handler
+    events:
+        - http:
+            path: fire-alerts
+            method: post
+            cors: true
