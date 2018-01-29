@@ -58,7 +58,7 @@ def fire_alerts(event, context):
 
     # get list of tiles that intersect the aoi
     tiles = geoprocessing.find_tiles(geom)
-    tiles = ['10N_110W', '10N_100W']
+
     # add specific analysis type for each request
     for tile in tiles:
 

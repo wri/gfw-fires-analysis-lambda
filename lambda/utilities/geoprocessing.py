@@ -25,7 +25,7 @@ def point_stats(geom, tile_id, fire_type):
 
     with fiona.open('s3://palm-risk-poc/data/fires/{}/data.vrt'.format(tile_id), layer='data') as src:
         for pt in src:
-            if pt['properties']['fire_type'].lower() in fire_type.lower() and shape(pt['geometry']).intersects(geom): # fire_type should be VIIRS or MODIS
+            if pt['properties']['fire_type'] in fire_type and shape(pt['geometry']).intersects(geom): # fire_type should be VIIRS or MODIS
                 fire_date = pt['properties']['fire_date']
                 intersect_list.append(fire_date) ## need to include modis/veers too
     # intersect list looks like: [u'2016-05-09', u'2016-05-13', u'2016-06-03', u'2016-05-07', u'2016-05-07']

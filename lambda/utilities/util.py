@@ -41,7 +41,7 @@ def grouped_and_to_rows(keys, vals, agg_type):
 
 def clean_fire_type_input(fire_type):
 
-    valid_fire_list = ['viirs', 'modis', 'all']:
+    valid_fire_list = ['viirs', 'modis', 'all']
 
     if fire_type:
         if fire_type.lower() in valid_fire_list:

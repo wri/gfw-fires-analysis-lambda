@@ -2,3 +2,4 @@ git+https://github.com/Toblerity/Fiona
 Shapely==1.6.4.post1
 grequests==0.3.0
 requests==2.18.2
+pyproj==1.9.5.1

@@ -21,9 +21,18 @@ package:
 
 functions:
   fire-alerts:
-    handler: handler.handler
+    handler: handler.fire_alerts
     events:
         - http:
             path: fire-alerts
             method: post
             cors: true
+
+  fire-analysis:
+    handler: handler.fire_analysis
+    events:
+        - http:
+            path: fire-analysis
+            method: post
+            cors: true
+
