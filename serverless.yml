@@ -1,4 +1,4 @@
-service: palm-risk-poc 
+service: palm-risk-poc
 
 provider:
   name: aws
@@ -21,7 +21,7 @@ package:
 
 functions:
   fire-alerts:
-    handler: lambda_handler.handler
+    handler: handler.handler
     events:
         - http:
             path: fire-alerts

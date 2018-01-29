@@ -3,3 +3,4 @@
 lambda-deploy.zip
 .serverless/*
 lambda/lib/
+env/
