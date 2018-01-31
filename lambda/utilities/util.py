@@ -53,8 +53,6 @@ def clean_fire_type_input(fire_type):
     else:
         return "all"
 
-
-
     if fire_type not in fire_options or valid_type != True:
 
         return gfw_api.api_error(msg)

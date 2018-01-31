@@ -13,30 +13,26 @@ def find_tiles(geom):
         for tile in tiles:
             if shape(tile['geometry']).intersects(geom):
                 tile_dict = tile['properties']
-                tile_name = tile_dict['location'][-12:].replace(".tif", "")
+                print tile_dict
+                tile_name = tile_dict['ID']
 
                 int_tiles.append(tile_name)
 
     return int_tiles
 
-def point_stats(geom, tile_id, fire_type):
+def point_stats(geom, tile_id, fire_type_list):
     # returns fire points within aoi within tile
-    intersect_list = []
 
+    date_counts = {}
     with fiona.open('s3://palm-risk-poc/data/fires/{}/data.vrt'.format(tile_id), layer='data') as src:
         for pt in src:
-            if pt['properties']['fire_type'] in fire_type and shape(pt['geometry']).intersects(geom): # fire_type should be VIIRS or MODIS
+            if pt['properties']['fire_type'] in fire_type_list and shape(pt['geometry']).intersects(geom):
                 fire_date = pt['properties']['fire_date']
-                intersect_list.append(fire_date) ## need to include modis/veers too
-    # intersect list looks like: [u'2016-05-09', u'2016-05-13', u'2016-06-03', u'2016-05-07', u'2016-05-07']
 
-    # create dictionary of unique dates and how many fire points on that date
-    date_counts = {}
-    for d in intersect_list:
-        try:
-            date_counts[d] += 1
-        except:
-            date_counts[d] = 1
+                try:
+                    date_counts[fire_date] += 1
+                except KeyError:
+                    date_counts[fire_date] = 1
 
     # looks like {'2016-05-09': 15, '2016-05-13':20}
     return date_counts
@@ -45,11 +41,13 @@ def point_stats(geom, tile_id, fire_type):
 def merge_dates(response_list, tile_id_list):
     # from format of [{"10N_110W": {"2016-06-06": 2, ...
     # get just {"2016-06-06": 2, } etc
+
     merged_dates = {}
-    comb_dict = dict(pair for d in response_list for pair in d.items()) # dict with tileid: {date: count, date:count}
+
+    comb_dict = dict(pair for d in response_list for pair in d.json().items()) # dict with tileid: {date: count, date:count}
 
     for tile_id in tile_id_list:
-
+        print tile_id
         for alert_date_str, alert_count in comb_dict[tile_id].iteritems():
             alert_date = datetime.datetime.strptime(alert_date_str, "%Y-%m-%d")
 

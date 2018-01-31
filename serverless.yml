@@ -1,4 +1,4 @@
-service: palm-risk-poc
+service: fire-alerts
 
 provider:
   name: aws
@@ -35,4 +35,3 @@ functions:
             path: fire-analysis
             method: post
             cors: true
-

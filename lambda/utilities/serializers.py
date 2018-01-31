@@ -13,12 +13,29 @@ def http_response(response):
 
 
 def serialize_fire_analysis(date_list, tile_id):
-    print date_list
+
     return http_response({tile_id: date_list})
 
 
+def serialize_fire_alerts(date_list, agg_by):
+
+    if agg_by != 'all':
+        date_list = date_list[agg_by]
+
+    serialized = {
+    "data": {
+        "aggregate_by": agg_by,
+        "aggregate_values": True,
+        "attributes": {
+            "downloadUrls": None,
+            "value": date_list},
+        "period": None,
+        "type": "fire-alerts"}
+    }
+
+    return http_response(serialized)
+
 def api_error(msg):
-    print msg
 
     return {
         'statusCode': 400,

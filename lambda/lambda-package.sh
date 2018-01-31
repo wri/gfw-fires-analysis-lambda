@@ -31,3 +31,6 @@ ln -s GDAL-2.2.0-py$PYVER-linux-x86_64.egg/osgeo $DEPLOY_DIR/lib/python$PYVER/si
 # zip up deploy package
 cd $DEPLOY_DIR
 zip -ruq ../lambda-deploy.zip ./
+
+# remove lib dir because we are not using when developing locally
+rm -r lib/
