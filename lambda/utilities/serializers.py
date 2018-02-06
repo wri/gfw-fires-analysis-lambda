@@ -36,7 +36,7 @@ def serialize_fire_alerts(date_list, agg_by):
     return http_response(serialized)
 
 def api_error(msg):
-
+    print msg
     return {
         'statusCode': 400,
         'headers': {'Access-Control-Allow-Origin': '*'},

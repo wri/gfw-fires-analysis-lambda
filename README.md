@@ -1,43 +1,61 @@
-## Raster Processing on Serverless Architecture
+# gfw-umd-loss-gain-lambda
 
-Code to parallelize raster-to-point operations and write the output to S3
+### Background
 
-This is currently in development, but will ultimately be used to convert global Hansen or biomass data to a format usable for our hadoop point in polygon process.
+This repo takes Matt McFarland's [raster lambda demo](https://github.com/mmcfarland/foss4g-lambda-demo) and uses it to provide a scalable alternative to the GEE-backed [umd-loss-gain](https://github.com/wri/gfw-umd-loss-gain-lambda).
 
-Proposed inputs:
-- S3 VRT of geotifs to vectorize
-- bbox of area to vectorize
-- output_path of s3 file to write
+This usage grew out of the need to process 2000 palm oil mills in under 5 minutes, per the requirements for the upcoming GFW Pro application.
 
-### Development
+### Endpoints
 
-1. install dependencies - docker, serverless CLI
-2. Test existing code
+The endpoints deployed are designed to exactly mimic existing GFW API endpoints, making it easy to 'plug' this service into existing code. The current exposed endpoints are as follows:
+
+Base URL:
+https://0yvx7602sb.execute-api.us-east-1.amazonaws.com/dev/
+
+/umd-loss-gain:
+Replicates the existing umd-loss-gain endpoint
+
+/analysis:
+Runs analysis for loss | gain | extent against a polygon AOI. These requests are parallelized under the hood as part of the umd-loss-gain endpoint
+
+/landcover:
+Matches the /landcover endpoint on the GFW API, but only provides analysis for `primary-forest` data (the only layer required by GFW Pro batch analysis at this time)
+
+/loss-by-landcover:
+Matches the /loss-by-landcover endpoint, again only providing results for `primary-forest` data
+
+### Limitations
+
+Our main obstacle here is speed; particularly large areas may time out. This isn't an issue for the palm-risk use case (all areas are 50 km buffers of palm oil mills) but we could run into this if we expand the usage of this repo.
+
+If we need to cross this bridge, the subdivide_polygon function in the [original repo](https://github.com/mmcfarland/foss4g-lambda-demo/blob/master/handler.py#L63) will likely help.
+
+## Development
+
+1. Install Serverless Framework
 ```
-docker-compose run test
-```
-3. Make changes, then publish
-```
-docker compose run package
-serverless deploy -v
-```
-4. Test invocation with python
-```
-python invoke_example.py
-```
-5. Check output. Currently writing files here:
-```
-s3://palm-risk-poc/raster-to-point/
+npm install
 ```
 
-### Processing raster data
+2. Install python dependencies in virtualenv
+```
+./scripts/setup.sh
+```
 
-This is largely TBD until we get a process going but hopefully we'll have something like this:
+3. Activate virtualenv
+```
+source env/bin/activate
+```
 
-`python tif-to-points.py -t <vrt path> -g <grid shp> -i <id fieldname>`
+4. Test locally
+```
+python handler.py
+```
 
-### Acknowledgements
+5. Configure `serverless.yml` to specify your AWS profile and s3 buckets
 
-Thanks to Matt Hanson and the Development Seed team for building such a solid geolambda infrastructure and testing environment: https://github.com/developmentseed/geolambda/
-
-And to Matthew Mcfarland and Azavea for introducing me to the serverless CLI with his rasterio lambda project: https://github.com/mmcfarland/foss4g-lambda-demo
+6. Create serverless stack and deploy
+```
+./scripts/publish.sh
+```
