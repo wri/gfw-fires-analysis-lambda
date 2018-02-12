@@ -4,6 +4,7 @@ from collections import defaultdict
 from functools import partial
 from shapely.ops import transform
 import pyproj
+import serializers
 
 from shapely.geometry import shape
 
@@ -93,3 +94,34 @@ def get_polygon_area(geom):
 
     # return area in ha
     return geom_area.area / 10000.
+
+
+def validate_params(params):
+    # for testing purposes, accept a period parameter
+    period = params.get('period', False)
+
+    # get agg values parameter. if not specified, set to false
+    agg_values = params.get('aggregate_values', False)
+
+    # if agg values is set to true in any of these forms, correct it to bool
+    if agg_values in ['true', 'TRUE', 'True', True]:
+        params['aggregate_values'] = True
+
+    else:
+        raise ValueError('aggregate_values must be set to true')
+
+    # if user does not supply correct/spelling of agg_by params, raise error
+    agg_by = params.get('aggregate_by')
+    agg_by_options = ['year', 'quarter', 'month', 'week', 'all']
+    if agg_by not in agg_by_options:
+        raise ValueError('You must supply an aggregate_by param: {}'.format(', '.join(agg_by_options)))
+
+    # if fire type not supplied, set to all (modis and viirs)
+    fire_type = params.get('fire_type')
+    if not fire_type:
+        params['fire_type'] = 'all'
+
+    # if fire type is misspelled, correct it
+    fire_type = clean_fire_type_input(fire_type)
+
+    return params

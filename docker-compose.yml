@@ -13,7 +13,7 @@ services:
 
   test:
     image: 'developmentseed/geolambda:min'
-    entrypoint: bash -c 'nosetests -v -s -w /home/geolambda/;'
+    entrypoint: bash -c 'nosetests -v -s --nologcapture -w /home/geolambda/;'
     env_file: .env
     volumes:
       - './lambda:/home/geolambda/lambda'

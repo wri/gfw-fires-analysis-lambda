@@ -23,7 +23,7 @@ class TestAlerts(TestCase):
         fire_type = 'modis'
         payload = {
             'body': json.dumps({'geojson': aoi}),
-            'queryStringParameters': {'aggregate_values': 'true', 'aggregate_by': aggregate_by, 'fire_type': fire_type}
+            'queryStringParameters': {'aggregate_values': 'true', 'aggregate_by': aggregate_by, 'fire_type': fire_type, 'period': '2016-01-01,2017-01-01'}
         }
 
         result = handler.fire_alerts(payload, None)
@@ -47,7 +47,7 @@ class TestBogusInputs(TestCase):
         fire_type = 'modis'
         self.payload = {
             'body': json.dumps({'geojson': aoi}),
-            'queryStringParameters': {'aggregate_values': 'true', 'aggregate_by': aggregate_by, 'fire_type': fire_type}
+            'queryStringParameters': {'aggregate_values': 'true', 'aggregate_by': aggregate_by, 'fire_type': fire_type, 'period': '2016-01-01,2017-01-01'}
                     }
 
     def run_fire_alerts(self, payload):
@@ -120,7 +120,7 @@ class TestAnalysis(TestCase):
         tile_id = '00N_110E'
         payload = {
             'body': json.dumps({'geojson': aoi}),
-            'queryStringParameters': {'tile_id': tile_id, 'fire_type': 'all'}
+            'queryStringParameters': {'tile_id': tile_id, 'fire_type': 'all', 'period': '2016-01-01,2017-01-01'}
         }
 
         result = handler.fire_analysis(payload, None)

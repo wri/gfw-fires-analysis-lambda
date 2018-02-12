@@ -17,7 +17,7 @@ class BuildingsGenerator(object):
         self.folder = 'alerts-tsv/temp/fires-analysis'
 
     def get_query_string(self):
-        
+
         return ("SELECT fire_type, fire_date, count(*) as fire_count "
        "FROM FIRES "
        "WHERE fire_date > Date('{}') AND "
@@ -63,4 +63,5 @@ class BuildingsGenerator(object):
 
     def generate(self):
         query_id = self.get_query_id()
+        print self.get_query_string()
         return self.get_results_df(query_id)
