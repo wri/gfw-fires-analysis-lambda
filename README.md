@@ -24,11 +24,17 @@ Athena costs $5 per TB of data queried. To reduce amount of data queried, we wil
 ## Development
 1. Clone locally
 
-2. Run lambda/handler.py to test analysis and alerts endpoints (see `if __name__ == '__main__':` block)
+2. Create .env file to store AWS credentials:
+```
+AWS_ACCESS_KEY_ID=<my key id>
+AWS_SECRET_ACCESS_KEY=<my key>
+```
 
-3. Build docker container `docker-compose build`
+3. Run lambda/handler.py to test analysis and alerts endpoints (see `if __name__ == '__main__':` block)
 
-4. Run `docker-compose run test`. This will execute the tests in test/test_lambda.py in the right environment
+4. Build docker container `docker-compose build`
+
+5. Run `docker-compose run test`. This will execute the tests in test/test_lambda.py in the right environment
 
 ## Deployment
 1. install serverless `npm install -g serverless`

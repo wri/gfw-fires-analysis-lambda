@@ -26,13 +26,3 @@ services:
     volumes:
       - '.:/home/geolambda/work'
 
-  testpackage:
-    image: 'developmentseed/geolambda:min'
-    command: bash -c "nosetests -v -s";
-    working_dir: /home/geolambda
-    env_file: .env
-    environment:
-      - LD_LIBRARY_PATH=/home/geolambda/lambda/lib
-    volumes:
-      - './test:/home/geolambda/test'
-      - './lambda:/home/geolambda/lambda'
