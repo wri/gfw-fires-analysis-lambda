@@ -1,61 +1,38 @@
-# gfw-umd-loss-gain-lambda
+# gfw-fires-analysis-lambda
 
 ### Background
-
-This repo takes Matt McFarland's [raster lambda demo](https://github.com/mmcfarland/foss4g-lambda-demo) and uses it to provide a scalable alternative to the GEE-backed [umd-loss-gain](https://github.com/wri/gfw-umd-loss-gain-lambda).
+This repo uses AWS lambda and AWS Athena to batch process fire counts.
 
 This usage grew out of the need to process 2000 palm oil mills in under 5 minutes, per the requirements for the upcoming GFW Pro application.
 
 ### Endpoints
 
-The endpoints deployed are designed to exactly mimic existing GFW API endpoints, making it easy to 'plug' this service into existing code. The current exposed endpoints are as follows:
+The endpoints deployed are designed to exactly mimic existing GFW API endpoints, making it easy to 'plug' this service into existing code.
 
 Base URL:
-https://0yvx7602sb.execute-api.us-east-1.amazonaws.com/dev/
+https://u81la7we82.execute-api.us-east-1.amazonaws.com/dev/
 
-/umd-loss-gain:
-Replicates the existing umd-loss-gain endpoint
+/fire-alerts
+Generates a list of 10x10 degree tiles that the geometry intersects. Sends the tile_ids and input params to fire-analysis endpoint
 
-/analysis:
-Runs analysis for loss | gain | extent against a polygon AOI. These requests are parallelized under the hood as part of the umd-loss-gain endpoint
+/fire-analysis
+Runs analysis for the 10x10 degree tile that geometry intersects. Returns a nested dictionary of tile id and counts of points per fire date
 
-/landcover:
-Matches the /landcover endpoint on the GFW API, but only provides analysis for `primary-forest` data (the only layer required by GFW Pro batch analysis at this time)
-
-/loss-by-landcover:
-Matches the /loss-by-landcover endpoint, again only providing results for `primary-forest` data
-
-### Limitations
-
-Our main obstacle here is speed; particularly large areas may time out. This isn't an issue for the palm-risk use case (all areas are 50 km buffers of palm oil mills) but we could run into this if we expand the usage of this repo.
-
-If we need to cross this bridge, the subdivide_polygon function in the [original repo](https://github.com/mmcfarland/foss4g-lambda-demo/blob/master/handler.py#L63) will likely help.
+## Limitations
+Athena costs $5 per TB of data queried. To reduce amount of data queried, we will split each request into tiles (parallel query).
 
 ## Development
+1. Clone locally
 
-1. Install Serverless Framework
-```
-npm install
-```
+2. Run lambda/handler.py to test analysis and alerts endpoints (see `if __name__ == '__main__':` block)
 
-2. Install python dependencies in virtualenv
-```
-./scripts/setup.sh
-```
+3. Build docker container `docker-compose build`
 
-3. Activate virtualenv
-```
-source env/bin/activate
-```
+4. Run `docker-compose run test`. This will execute the tests in test/test_lambda.py in the right environment
 
-4. Test locally
-```
-python handler.py
-```
+## Deployment
+1. install serverless `npm install -g serverless`
 
-5. Configure `serverless.yml` to specify your AWS profile and s3 buckets
+2. Package - `docker-compose run package`
 
-6. Create serverless stack and deploy
-```
-./scripts/publish.sh
-```
+3. Deploy - `serverless deploy -v`
