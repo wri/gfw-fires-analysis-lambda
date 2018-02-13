@@ -1,11 +1,19 @@
-FROM developmentseed/geolambda:min
+# Dockerfile.base
 
-# install app
+FROM lambdalinux/baseimage-amzn:2017.03-004
+
+RUN \
+	yum -y update; \
+	# python 2.7
+	yum install -y git gcc python27-devel python27-pip; \
+        pip install Cython; \
+    yum clean all;
+
+ENV \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
 COPY . /build
 WORKDIR /build
 RUN \
-    yum install git; \
-    pip install Cython; \
-    pip install -r /build/requirements.txt; \
-    rm -rf /build/*; \
-
+  pip install -r /build/requirements.txt; \
+  rm -rf /build/*; \

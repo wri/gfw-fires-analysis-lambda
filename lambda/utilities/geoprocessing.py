@@ -1,6 +1,8 @@
-from shapely.geometry import shape, Polygon
-import fiona
 import datetime
+import json
+
+import boto3
+from shapely.geometry import shape, Polygon
 
 from util import grouped_and_to_rows
 from athena_query import FirePointsGenerator
@@ -8,17 +10,20 @@ from athena_query import FirePointsGenerator
 
 def find_tiles(geom):
 
-    tiles = 's3://palm-risk-poc/data/fires/index.geojson'
+    s3 = boto3.resource('s3')
+
+    tile_obj = s3.Object('palm-risk-poc', 'data/fires/index.geojson')
+    grid_geojson = json.loads(tile_obj.get()['Body'].read().decode('utf-8'))
+
     int_tiles = []
 
-    with fiona.open(tiles, 'r', 'GeoJSON') as tiles:
-        for tile in tiles:
-            if shape(tile['geometry']).intersects(geom):
-                tile_dict = tile['properties']
-                print tile_dict
-                tile_name = tile_dict['ID']
+    for tile in grid_geojson['features']:
+        if shape(tile['geometry']).intersects(geom):
+            tile_dict = tile['properties']
+            print tile_dict
+            tile_name = tile_dict['ID']
 
-                int_tiles.append(tile_name)
+            int_tiles.append(tile_name)
 
     return int_tiles
 
