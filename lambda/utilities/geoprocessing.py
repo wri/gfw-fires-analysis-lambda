@@ -6,7 +6,7 @@ from util import grouped_and_to_rows
 
 def find_tiles(geom):
 
-    tiles = 's3://palm-risk-poc/data/fires/index.geojson'
+    tiles = 's3://palm-risk-poc/data/fires-gpkg/index.geojson'
     int_tiles = []
 
     with fiona.open(tiles, 'r', 'GeoJSON') as tiles:
@@ -24,7 +24,7 @@ def point_stats(geom, tile_id, fire_type_list):
     # returns fire points within aoi within tile
 
     date_counts = {}
-    with fiona.open('s3://palm-risk-poc/data/fires/{}/data.vrt'.format(tile_id), layer='data') as src:
+    with fiona.open('s3://palm-risk-poc/data/fires-gpkg/{}/data.shp'.format(tile_id), layer='data') as src:
         for pt in src:
             if pt['properties']['fire_type'] in fire_type_list and shape(pt['geometry']).intersects(geom):
                 fire_date = pt['properties']['fire_date']

@@ -4,15 +4,17 @@ services:
 
   base:
     build:
+      dockerfile: Dockerfile
       context: .
-    image: 'developmentseed/geolambda:min'
     entrypoint: /bin/bash
     env_file: .env
     volumes:
       - '.:/home/geolambda/work'
 
   test:
-    image: 'developmentseed/geolambda:min'
+    build:
+      dockerfile: Dockerfile
+      context: .
     entrypoint: bash -c 'nosetests -v -s -w /home/geolambda/;'
     env_file: .env
     volumes:
@@ -20,19 +22,11 @@ services:
       - './test:/home/geolambda/test'
 
   package:
-    image: 'developmentseed/geolambda:min'
+    build:
+      dockerfile: Dockerfile
+      context: .
     command:  /home/geolambda/work/lambda/lambda-package.sh
     working_dir: /home/geolambda/work
     volumes:
       - '.:/home/geolambda/work'
 
-  testpackage:
-    image: 'developmentseed/geolambda:min'
-    command: bash -c "nosetests -v -s";
-    working_dir: /home/geolambda
-    env_file: .env
-    environment:
-      - LD_LIBRARY_PATH=/home/geolambda/lambda/lib
-    volumes:
-      - './test:/home/geolambda/test'
-      - './lambda:/home/geolambda/lambda'
