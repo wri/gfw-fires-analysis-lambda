@@ -11,6 +11,9 @@ cp /usr/local/bin/gdal_translate $DEPLOY_DIR/lib/
 # make deployment directory and add lambda handler
 mkdir -p $DEPLOY_DIR/lib/python$PYVER/site-packages
 
+# NB
+#$PREFIX evaulates to /usr/local/ in docker container
+
 # copy 32-bit libs
 cp $PREFIX/lib/libproj.so* $DEPLOY_DIR/lib/
 cp $PREFIX/lib/libgdal.so* $DEPLOY_DIR/lib/

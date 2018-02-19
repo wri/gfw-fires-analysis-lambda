@@ -1,12 +1,20 @@
+import datetime
+import subprocess
+
+import boto3
 from shapely.geometry import shape, Polygon
 import fiona
-import datetime
+
+# https://stackoverflow.com/a/31602136/4355916
+from gevent import monkey
+monkey.patch_all()
+
 from util import grouped_and_to_rows
 
 
 def find_tiles(geom):
 
-    tiles = 's3://palm-risk-poc/data/fires-gpkg/index.geojson'
+    tiles = 's3://palm-risk-poc/data/fires-one-by-one/index.geojson'
     int_tiles = []
 
     with fiona.open(tiles, 'r', 'GeoJSON') as tiles:
@@ -24,8 +32,18 @@ def point_stats(geom, tile_id, fire_type_list):
     # returns fire points within aoi within tile
 
     date_counts = {}
-    with fiona.open('s3://palm-risk-poc/data/fires-gpkg/{}/data.shp'.format(tile_id), layer='data') as src:
-        for pt in src:
+
+    # weirdly this seems 2x - 3x as fast as reading directly from s3
+    # maybe spatial index isn't used when reading from s3?
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket('palm-risk-poc')
+
+    gpkg_src = 'data/fires-one-by-one/{}/data.gpkg'.format(tile_id)
+    local_gpkg = '/tmp/data.gpkg'
+    bucket.download_file(gpkg_src, local_gpkg)
+
+    with fiona.open(local_gpkg, layer='data') as src:
+        for pt in src.filter(bbox=geom.bounds):
             if pt['properties']['fire_type'] in fire_type_list and shape(pt['geometry']).intersects(geom):
                 fire_date = pt['properties']['fire_date']
 
