@@ -21,7 +21,6 @@ def find_tiles(geom):
         for tile in tiles:
             if shape(tile['geometry']).intersects(geom):
                 tile_dict = tile['properties']
-                print tile_dict
                 tile_name = tile_dict['ID']
 
                 int_tiles.append(tile_name)
@@ -65,8 +64,12 @@ def merge_dates(response_list, tile_id_list):
     comb_dict = dict(pair for d in response_list for pair in d.json().items()) # dict with tileid: {date: count, date:count}
 
     for tile_id in tile_id_list:
-        print tile_id
-        for alert_date_str, alert_count in comb_dict[tile_id].iteritems():
+        try:
+            date_dict = comb_dict[tile_id]
+        except KeyError:
+            raise KeyError('No response found for tile id {}'.format(tile_id))
+
+        for alert_date_str, alert_count in date_dict.iteritems():
             alert_date = datetime.datetime.strptime(alert_date_str, "%Y-%m-%d")
 
             try:

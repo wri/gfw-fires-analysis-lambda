@@ -101,7 +101,10 @@ def fire_alerts(event, context):
     response_list = grequests.map(request_list, size=len(tiles))
 
     # merged_date_list looks like {datetime.datetime(2016, 6, 3, 0, 0): 12, datetime.datetime(2016, 4, 4, 0, 0): 14
-    merged_date_list = geoprocessing.merge_dates(response_list, tiles)
+    try:
+        merged_date_list = geoprocessing.merge_dates(response_list, tiles)
+    except KeyError, e:
+        return serializers.api_error(str(e))
 
      # aggregate by
     resp_dict = geoprocessing.create_resp_dict(merged_date_list)
@@ -114,7 +117,7 @@ if __name__ == '__main__':
     # why this crazy structure? Oh lambda . . . sometimes I wonder
     event = {
              'body': json.dumps({'geojson': aoi}),
-             'queryStringParameters': {'aggregate_by':'week', 'aggregate_values': 'true', 'tile_id': '00N_110E', 'fire_type': 'all'}
+             'queryStringParameters': {'aggregate_by':'week', 'aggregate_values': 'true', 'tile_id': '01N_116E', 'fire_type': 'all'}
             }
 
-    fire_alerts(event, None)
+    print fire_analysis(event, None)
