@@ -88,7 +88,7 @@ class TestBogusInputs(TestCase):
         payload = copy.deepcopy(self.payload)
         payload['queryStringParameters']['aggregate_by'] = 'werk'
 
-        self.assertEqual(self.run_fire_alerts(payload), 'You must supply an aggregate_by param: year, quarter, month, week, all')
+        self.assertEqual(self.run_fire_alerts(payload), 'You must supply an aggregate_by param: year, quarter, month, week, day, all')
 
     def test_agg_values_false(self):
         payload = copy.deepcopy(self.payload)

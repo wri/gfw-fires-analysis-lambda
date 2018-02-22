@@ -66,7 +66,7 @@ def fire_alerts(event, context):
 
     # if user does not supply correct/spelling of agg_by params, raise error
     agg_by = params.get('aggregate_by')
-    agg_by_options = ['year', 'quarter', 'month', 'week', 'all']
+    agg_by_options = ['year', 'quarter', 'month', 'week', 'day', 'all']
     if agg_by not in agg_by_options:
         return serializers.api_error('You must supply an aggregate_by param: {}'.format(', '.join(agg_by_options)))
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # why this crazy structure? Oh lambda . . . sometimes I wonder
     event = {
              'body': json.dumps({'geojson': aoi}),
-             'queryStringParameters': {'aggregate_by':'week', 'aggregate_values': 'true', 'tile_id': '01N_116E', 'fire_type': 'all'}
+             'queryStringParameters': {'aggregate_by':'day', 'aggregate_values': 'true', 'tile_id': '01N_116E', 'fire_type': 'all'}
             }
 
     print fire_analysis(event, None)

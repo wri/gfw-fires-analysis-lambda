@@ -104,7 +104,7 @@ function init() {
 // we'll use the Geostore ID that's returned to pass
 // our AOI directly to the GLAD API
 function fireAnalysis(geojson, callback) {
-    url = 'https://u81la7we82.execute-api.us-east-1.amazonaws.com/dev/fire-alerts?aggregate_values=True&aggregate_by=week'
+    url = 'https://u81la7we82.execute-api.us-east-1.amazonaws.com/dev/fire-alerts?aggregate_values=True&aggregate_by=day'
 
     var http = new XMLHttpRequest();
     var params = JSON.stringify({
