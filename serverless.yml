@@ -35,3 +35,10 @@ functions:
             path: fire-analysis
             method: post
             cors: true
+
+  bulk-fire-upload:
+    handler: handler.bulk_fire_upload
+
+  update-fire-tile:
+    handler: handler.update_fire_tile
+    

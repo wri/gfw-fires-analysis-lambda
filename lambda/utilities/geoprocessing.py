@@ -1,7 +1,6 @@
 import datetime
 import subprocess
 
-import boto3
 from shapely.geometry import shape, Polygon
 import fiona
 
@@ -9,7 +8,7 @@ import fiona
 from gevent import monkey
 monkey.patch_all()
 
-from util import grouped_and_to_rows
+import util
 
 
 def find_tiles(geom):
@@ -32,14 +31,7 @@ def point_stats(geom, tile_id, fire_type_list):
 
     date_counts = {}
 
-    # weirdly this seems 2x - 3x as fast as reading directly from s3
-    # maybe spatial index isn't used when reading from s3?
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket('palm-risk-poc')
-
-    gpkg_src = 'data/fires-one-by-one/{}/data.gpkg'.format(tile_id)
-    local_gpkg = '/tmp/data.gpkg'
-    bucket.download_file(gpkg_src, local_gpkg)
+    local_gpkg = util.download_gpkg(tile_id)
 
     with fiona.open(local_gpkg, layer='data') as src:
         for pt in src.filter(bbox=geom.bounds):
@@ -85,12 +77,13 @@ def create_resp_dict(date_dict):
     v = date_dict.values() # count
 
     resp_dict = {
-                 'year': grouped_and_to_rows([x.year for x in k], v, 'year'),
+                 'year': util.grouped_and_to_rows([x.year for x in k], v, 'year'),
                  # month --> quarter calc: https://stackoverflow.com/questions/1406131
-                 'quarter': grouped_and_to_rows([(x.year, (x.month-1)//3 + 1) for x in k], v, 'quarter'),
-                 'month':  grouped_and_to_rows([(x.year, x.month) for x in k], v, 'month'),
-                 'week': grouped_and_to_rows([(x.year, x.isocalendar()[1]) for x in k], v, 'week'),
-                 'day': grouped_and_to_rows([(x.year, x.strftime('%Y-%m-%d')) for x in k], v, 'day')
+                 'quarter': util.grouped_and_to_rows([(x.year, (x.month-1)//3 + 1) for x in k], v, 'quarter'),
+                 'month':  util.grouped_and_to_rows([(x.year, x.month) for x in k], v, 'month'),
+                 'week': util.grouped_and_to_rows([(x.year, x.isocalendar()[1]) for x in k], v, 'week'),
+                 'day': util.grouped_and_to_rows([(x.year, x.strftime('%Y-%m-%d')) for x in k], v, 'day')
                 }
 
     return resp_dict
+
