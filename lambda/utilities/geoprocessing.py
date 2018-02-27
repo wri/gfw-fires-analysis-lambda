@@ -8,7 +8,7 @@ import fiona
 from gevent import monkey
 monkey.patch_all()
 
-import util
+import util, gpkg_etl
 
 
 def find_tiles(geom):
@@ -26,16 +26,23 @@ def find_tiles(geom):
 
     return int_tiles
 
-def point_stats(geom, tile_id, fire_type_list):
+
+def point_stats(geom, tile_id, fire_type_list, period):
     # returns fire points within aoi within tile
 
     date_counts = {}
 
-    local_gpkg = util.download_gpkg(tile_id)
+    local_gpkg = gpkg_etl.download_gpkg(tile_id)
+
+    start_date, end_date = util.period_to_dates(period)
 
     with fiona.open(local_gpkg, layer='data') as src:
         for pt in src.filter(bbox=geom.bounds):
-            if pt['properties']['fire_type'] in fire_type_list and shape(pt['geometry']).intersects(geom):
+            fire_type = pt['properties']['fire_type']
+            fire_geom = shape(pt['geometry'])
+            fire_date = datetime.datetime.strptime(pt['properties']['fire_date'], '%Y-%m-%d').date()
+
+            if fire_type in fire_type_list and (end_date >= fire_date >= start_date) and fire_geom.intersects(geom):
                 fire_date = pt['properties']['fire_date']
 
                 try:
@@ -86,4 +93,3 @@ def create_resp_dict(date_dict):
                 }
 
     return resp_dict
-

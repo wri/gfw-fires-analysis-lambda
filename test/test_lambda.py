@@ -3,6 +3,8 @@ import os
 import sys
 import json
 import logging
+import datetime
+from dateutil.relativedelta import relativedelta
 import copy
 
 
@@ -57,6 +59,41 @@ class TestBogusInputs(TestCase):
         result_message = result_body['error']
 
         return result_message
+
+    def test_start_date_after_end_date(self):
+        payload = copy.deepcopy(self.payload)
+
+        today = datetime.datetime.now().date()
+        last_month = today - relativedelta(months=1)
+
+        # should be last_month date, then today
+        period = today.strftime('%Y-%m-%d') + ',' + last_month.strftime('%Y-%m-%d')
+        payload['queryStringParameters']['period'] = period
+
+        self.assertEqual(self.run_fire_alerts(payload), 'Start date must be <= end date')
+
+    def test_bogus_period(self):
+        payload = copy.deepcopy(self.payload)
+
+        today = datetime.datetime.now().date()
+        last_month = today - relativedelta(months=1)
+
+        # proper strftime format is '%Y-%m-%d'
+        period = last_month.strftime('%y-%m-%d') + ',' + today.strftime('%y-%m-%d')
+        payload['queryStringParameters']['period'] = period
+
+        self.assertEqual(self.run_fire_alerts(payload), 'period must be formatted as YYYY-mm-dd,YYYY-mm-dd')
+
+    def test_start_date_greater_than_one_year(self):
+        payload = copy.deepcopy(self.payload)
+
+        today = datetime.datetime.now().date()
+        last_year_and_one_day = today - relativedelta(years=1, days=1)
+
+        period = last_year_and_one_day.strftime('%Y-%m-%d') + ',' + today.strftime('%Y-%m-%d')
+        payload['queryStringParameters']['period'] = period
+
+        self.assertEqual(self.run_fire_alerts(payload), 'Start date must be more recent than one year ago')
 
     def test_bad_geom(self):
         aoi = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[114.2578125,2.4601811810210052]}}]}
@@ -119,7 +156,7 @@ class TestAnalysis(TestCase):
         tile_id = '00N_116E'
         payload = {
             'body': json.dumps({'geojson': aoi}),
-            'queryStringParameters': {'tile_id': tile_id, 'fire_type': 'all'}
+            'queryStringParameters': {'tile_id': tile_id, 'fire_type': 'all', 'period': '2016-01-01,2017-01-01'}
         }
 
         result = handler.fire_analysis(payload, None)
