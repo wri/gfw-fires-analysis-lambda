@@ -109,12 +109,13 @@ def update_fire_tile(event, context):
 
     tile_id = event['queryStringParameters']['tile_id']
     fire_data = event['body']['fire_data']
+    fire_data = event['body']['fire_type']
 
     # download current gpkg
     local_gpkg = gpkg_etl.download_gpkg(tile_id)
 
     # copy old 1x1 data into new GPKG, then append new data
-    updated_gpkg = gpkg_etl.update_geopackage(local_gpkg, fire_data)
+    updated_gpkg = gpkg_etl.update_geopackage(local_gpkg, fire_data, fire_type)
 
     # overwrite GPKG on s3
     gpkg_etl.save_to_s3(tile_id, updated_gpkg)

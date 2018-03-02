@@ -101,7 +101,7 @@ def clean_tile_id(tile_id):
     return '_'.join([lat, lon])
 
 
-def update_geopackage(src_gpkg, fire_list):
+def update_geopackage(src_gpkg, fire_list, fire_type):
 
     temp_gpkg = '/tmp/temp.gpkg'
 
@@ -110,7 +110,7 @@ def update_geopackage(src_gpkg, fire_list):
 
     # get list of dates we're updating
     # don't want any overlap between dates we're updating an data in gpkg
-    update_date_list = [datetime.datetime.strptime(x['fire_date'], '%Y-%m-%d') for x in fire_list]
+    update_dates = set([datetime.datetime.strptime(x['fire_date'], '%Y-%m-%d') for x in fire_list])
 
     # also want to remove any fires > 1 year old, because they're out of the scope of this project
     one_year_ago = datetime.datetime.now().date() - relativedelta(years=1)
@@ -124,8 +124,16 @@ def update_geopackage(src_gpkg, fire_list):
             # copy existing fires to new database
             for record in src:
                 record_date = datetime.datetime.strptime(record['properties']['fire_date'], '%Y-%m-%d').date()
-                if record_date >= one_year_ago and record_date not in update_date_list:
-                    dst.write(record)
+                record_type = record['properties']['fire_type']
+
+                # make sure we're only saving "new" data
+                if record_date >= one_year_ago:
+
+                    # if we're updating this date + fire type, don't write old data
+                    if record_date in update_dates and record_type == fire_type:
+                        pass
+                    else:
+                        dst.write(record)
 
             # write new files based on the input data
             for new_fire in fire_list:
