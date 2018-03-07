@@ -13,11 +13,13 @@ import grequests
 from utilities import util, geoprocessing, serializers, gpkg_etl
 
 
-# set up logger
-logger = logging.getLogger(__file__)
-logger.setLevel(logging.ERROR)
-# commented out to avoid duplicate logs in lambda
-# logger.addHandler(logging.StreamHandler())
+# https://stackoverflow.com/a/2588054/4355916
+root = logging.getLogger()
+if root.handlers:
+    for handler in root.handlers:
+        root.removeHandler(handler)
+
+logging.basicConfig(format='%(asctime)s %(message)s',level=logging.ERROR)
 
 def fire_analysis(event, context):
 
@@ -84,7 +86,7 @@ def fire_alerts(event, context):
 def bulk_fire_upload(event, context):
 
     # will ultimately pull from s3 into memory
-    s3_path = json.loads(event['body'])['fire_csv']
+    s3_path = event['queryStringParameters']['fire_csv']
 
     # only update one fire type at a time
     fire_type = event['queryStringParameters']['fire_type']
@@ -102,6 +104,12 @@ def bulk_fire_upload(event, context):
         # temporary - do this directly before async with lambda
         tile_event = {'queryStringParameters': {'tile_id': tile_id, 'fire_type': fire_type},
                       'body': {'fire_data': fires_list}}
+
+        # limit for invoke payload - write fire list as JSON to s3 instead
+        if sys.getsizeof(json.dumps(tile_event)) > 131000:
+            out_s3_path = gpkg_etl.write_fire_tile_to_s3(fires_list, fire_type, tile_id)
+            tile_event['body']['fire_data'] = out_s3_path
+
         client.invoke(FunctionName='fire-alerts-dev-update-fire-tile',
                       InvocationType='Event',
                       Payload=json.dumps(tile_event))
@@ -112,8 +120,8 @@ def bulk_fire_upload(event, context):
 def update_fire_tile(event, context):
 
     tile_id = event['queryStringParameters']['tile_id']
+    fire_type = event['queryStringParameters']['fire_type']
     fire_data = event['body']['fire_data']
-    fire_type = event['body']['fire_type']
 
     # download current gpkg
     local_gpkg = gpkg_etl.download_gpkg(tile_id)

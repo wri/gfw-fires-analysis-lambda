@@ -1,5 +1,6 @@
 import csv
 import datetime
+import json
 from dateutil.relativedelta import relativedelta
 from urlparse import urlparse
 from collections import OrderedDict
@@ -13,7 +14,7 @@ import fiona
 schema = {'geometry': 'Point', 'properties': [('fire_type', 'str'), ('fire_date', 'str')]}
 
 
-def bulk_fires_to_tile(s3_path):
+def s3_to_object(s3_path):
 
     s3 = boto3.resource('s3')
 
@@ -24,7 +25,14 @@ def bulk_fires_to_tile(s3_path):
     obj = s3.Object(bucket, key)
 
     # https://stackoverflow.com/a/3305964/4355916
-    f = StringIO(obj.get()['Body'].read().decode('utf-8'))
+    return obj.get()['Body'].read().decode('utf-8')
+
+
+def bulk_fires_to_tile(s3_path):
+
+    s3_obj = s3_to_object(s3_path)
+    f = StringIO(s3_obj)
+
     csv_reader = csv.DictReader(f)
 
     tile_dict = {}
@@ -108,9 +116,14 @@ def update_geopackage(src_gpkg, fire_list, fire_type):
     feature_template = {'geometry': {'type': 'Point', 'coordinates': ()},
                                      'type': 'Feature', 'properties': OrderedDict()}
 
+    # if we have a lot of fires to update, fire_list may be a string pointing
+    # to an s3 object (s3://palm-risk-poc/ . . . 
+    if isinstance(fire_list, basestring):
+        fire_list = read_fire_list_from_s3(fire_list)
+
     # get list of dates we're updating
     # don't want any overlap between dates we're updating an data in gpkg
-    update_dates = set([datetime.datetime.strptime(x['fire_date'], '%Y-%m-%d') for x in fire_list])
+    update_dates = set([datetime.datetime.strptime(x['fire_date'], '%m/%d/%Y %H:%M:%S').date() for x in fire_list])
 
     # also want to remove any fires > 1 year old, because they're out of the scope of this project
     one_year_ago = datetime.datetime.now().date() - relativedelta(years=1)
@@ -147,3 +160,22 @@ def update_geopackage(src_gpkg, fire_list, fire_type):
                 dst.write(new_feature)
 
     return temp_gpkg
+
+
+def write_fire_tile_to_s3(fire_list, fire_type, tile_id):
+    
+    date_fmt = datetime.datetime.today().date().strftime('%Y%m%d')
+    out_s3_path = 'temp/fires/{}/{}/{}.json'.format(fire_type, date_fmt, tile_id)
+
+    s3 = boto3.client('s3')
+    bucket_name = 'palm-risk-poc'
+    s3.put_object(Bucket=bucket_name, Key=out_s3_path, Body=json.dumps(fire_list))
+
+    return 's3://{}/{}'.format(bucket_name, out_s3_path)
+
+
+def read_fire_list_from_s3(s3_path):
+
+    s3_obj = s3_to_object(s3_path)
+    return json.loads(s3_obj)
+

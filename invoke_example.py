@@ -4,21 +4,18 @@ import json
 
 client = boto3.client('lambda')
 
-# example landsat base path
-landsat_base = 's3://landsat-pds/L8/001/002/LC80010022016230LGN00'
+# first, upload a day's worth of fires (one type only) to
+# somewhere on s3
+fire_type = 'VIIRS'
+fire_csv = 's3://gfw2-data/alerts-tsv/temp/fires/viirs/2017-08-21.csv'
 
-# for some reason each band has it's own TIF
-# or so it would seem from the filenames
-# iterate over bands 1 - 11 to demonstrate lambda calcs
-for band_id in range(1, 12):
+# then build an event to kick off the process
+event = {'queryStringParameters': {'fire_csv': fire_csv, 'fire_type': fire_type}}
 
-    filename = '{}/LC80010022016230LGN00_B{}.TIF'.format(landsat_base, band_id)
-
-    # parameters for the lambda function
-    # in this case just a filename to calculate stats on
-    event = {'filename': filename}
-
-    client.invoke(
-        FunctionName='raster-to-point-dev-receiver',
+# invoke our bulk upload function, which will download the
+# fire_csv above, split it into 1x1 tiles, then kick off
+# per-tile lambda functions to store this data
+client.invoke(
+        FunctionName='fire-alerts-dev-bulk-fire-upload',
         InvocationType='Event',
         Payload=json.dumps(event))
