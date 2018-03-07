@@ -83,8 +83,11 @@ def fire_alerts(event, context):
 
 def bulk_fire_upload(event, context):
 
-    # pull into s3 into memory
+    # will ultimately pull from s3 into memory
     s3_path = json.loads(event['body'])['fire_csv']
+
+    # only update one fire type at a time
+    fire_type = event['queryStringParameters']['fire_type']
 
     # read s3 path into memory, snap to tiles
     # then return {'11N_072E': [{'fire_date': '2015-01-01, 'fire_type': 'VIIRS'} ...]}
@@ -97,7 +100,8 @@ def bulk_fire_upload(event, context):
     for tile_id, fires_list in tile_dict.iteritems():
 
         # temporary - do this directly before async with lambda
-        tile_event = {'queryStringParameters': {'tile_id': tile_id}, 'body': {'fire_data': fires_list}}
+        tile_event = {'queryStringParameters': {'tile_id': tile_id, 'fire_type': fire_type},
+                      'body': {'fire_data': fires_list}}
         client.invoke(FunctionName='fire-alerts-dev-update-fire-tile',
                       InvocationType='Event',
                       Payload=json.dumps(tile_event))
@@ -109,7 +113,7 @@ def update_fire_tile(event, context):
 
     tile_id = event['queryStringParameters']['tile_id']
     fire_data = event['body']['fire_data']
-    fire_data = event['body']['fire_type']
+    fire_type = event['body']['fire_type']
 
     # download current gpkg
     local_gpkg = gpkg_etl.download_gpkg(tile_id)

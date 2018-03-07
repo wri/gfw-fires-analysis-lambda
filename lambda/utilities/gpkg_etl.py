@@ -139,9 +139,11 @@ def update_geopackage(src_gpkg, fire_list, fire_type):
             for new_fire in fire_list:
                 new_feature = feature_template.copy()
                 new_feature['geometry']['coordinates'] = (float(new_fire['lon']), float(new_fire['lat']))
-                new_feature['properties']['fire_date'] = new_fire['fire_date']
                 new_feature['properties']['fire_type'] = new_fire['fire_type']
 
+                # read in timtestamp as string, convert to date, then format to match GPKG standard
+                formatted_date = datetime.datetime.strptime(new_fire['fire_date'], '%m/%d/%Y %H:%M:%S').date().strftime('%Y-%m-%d')
+                new_feature['properties']['fire_date'] = formatted_date
                 dst.write(new_feature)
 
     return temp_gpkg
