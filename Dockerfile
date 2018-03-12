@@ -60,6 +60,8 @@ RUN \
     pip install . -v; \
     rm -rf /build/*; \
     # Manually enable reading of VRT - disabled by default
-    sed -i 's/#   ("VRT"/   ("OGR_VRT"/g' /usr/local/lib64/python2.7/site-packages/fiona/drvsupport.py
+    sed -i 's/#   ("VRT"/   ("OGR_VRT"/g' /usr/local/lib64/python2.7/site-packages/fiona/drvsupport.py; \
+    sed -i 's/("GPKG", "rw")/("GPKG", "raw")/g' /usr/local/lib64/python2.7/site-packages/fiona/drvsupport.py;
+   
 
 WORKDIR /home/geolambda

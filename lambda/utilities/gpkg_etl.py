@@ -1,4 +1,5 @@
 import csv
+import sqlite3
 import datetime
 import json
 from dateutil.relativedelta import relativedelta
@@ -14,7 +15,7 @@ import fiona
 schema = {'geometry': 'Point', 'properties': [('fire_type', 'str'), ('fire_date', 'str')]}
 
 
-def s3_to_object(s3_path):
+def s3_to_csv_reader(s3_path):
 
     s3 = boto3.resource('s3')
 
@@ -25,21 +26,21 @@ def s3_to_object(s3_path):
     obj = s3.Object(bucket, key)
 
     # https://stackoverflow.com/a/3305964/4355916
-    return obj.get()['Body'].read().decode('utf-8')
+    as_str = StringIO(obj.get()['Body'].read().decode('utf-8'))
+
+    # return list of lines
+    return as_str.getvalue().splitlines()
 
 
 def bulk_fires_to_tile(s3_path):
 
-    s3_obj = s3_to_object(s3_path)
-    f = StringIO(s3_obj)
-
-    csv_reader = csv.DictReader(f)
+    csv_reader = csv.DictReader(s3_to_csv_reader(s3_path))
 
     tile_dict = {}
 
     for row in csv_reader:
-        rounded_lat = np.ceil(float(row['lat'])).astype(int).astype(str)
-        rounded_lon = np.floor(float(row['lon'])).astype(int).astype(str)
+        rounded_lat = np.ceil(float(row['LATITUDE'])).astype(int).astype(str)
+        rounded_lon = np.floor(float(row['LONGITUDE'])).astype(int).astype(str)
 
         tile_id = rounded_lat + '_' + rounded_lon
 
@@ -111,55 +112,52 @@ def clean_tile_id(tile_id):
 
 def update_geopackage(src_gpkg, fire_list, fire_type):
 
-    temp_gpkg = '/tmp/temp.gpkg'
-
     feature_template = {'geometry': {'type': 'Point', 'coordinates': ()},
                                      'type': 'Feature', 'properties': OrderedDict()}
 
     # if we have a lot of fires to update, fire_list may be a string pointing
     # to an s3 object (s3://palm-risk-poc/ . . . 
     if isinstance(fire_list, basestring):
-        fire_list = read_fire_list_from_s3(fire_list)
+        fire_list = [x for x in csv.DictReader(s3_to_csv_reader(fire_list))]
+
+    # delete any fires of our type and on the dates we're updating
+    delete_identical_fires(src_gpkg, fire_type, fire_list)
+
+    # open source geopackage to write new data
+    with fiona.open(src_gpkg, 'a', schema=schema, driver='GPKG', layer='data') as src:
+
+        # write new files based on the input data
+        for new_fire in fire_list:
+            new_feature = feature_template.copy()
+            new_feature['geometry']['coordinates'] = (float(new_fire['LONGITUDE']), float(new_fire['LATITUDE']))
+            new_feature['properties']['fire_type'] = fire_type
+
+            # read in timtestamp as string, convert to date, then format to match GPKG standard
+            formatted_date = datetime.datetime.strptime(new_fire['ACQ_DATE'], '%m/%d/%Y %H:%M:%S').date().strftime('%Y-%m-%d')
+            new_feature['properties']['fire_date'] = formatted_date
+            src.write(new_feature)
+
+    return src_gpkg
+
+
+def delete_identical_fires(src_gpkg, fire_type, fire_list):
 
     # get list of dates we're updating
     # don't want any overlap between dates we're updating an data in gpkg
-    update_dates = set([datetime.datetime.strptime(x['fire_date'], '%m/%d/%Y %H:%M:%S').date() for x in fire_list])
+    update_dates = set([datetime.datetime.strptime(x['ACQ_DATE'], '%m/%d/%Y %H:%M:%S').date().strftime('%Y-%m-%d') 
+                          for x in fire_list])
 
-    # also want to remove any fires > 1 year old, because they're out of the scope of this project
-    one_year_ago = datetime.datetime.now().date() - relativedelta(years=1)
+    # connect to GPKG and delete any data that we're updating currently,
+    # based on fire_date and fire_type
+    conn = sqlite3.connect(src_gpkg)
+    cur = conn.cursor()
 
-    # open source geopackage to get older fires data
-    with fiona.open(src_gpkg) as src:
-
-        # open new temporary output for writing
-        with fiona.open(temp_gpkg, 'w', schema=schema, driver='GPKG', layer='data') as dst:
-
-            # copy existing fires to new database
-            for record in src:
-                record_date = datetime.datetime.strptime(record['properties']['fire_date'], '%Y-%m-%d').date()
-                record_type = record['properties']['fire_type']
-
-                # make sure we're only saving "new" data
-                if record_date >= one_year_ago:
-
-                    # if we're updating this date + fire type, don't write old data
-                    if record_date in update_dates and record_type == fire_type:
-                        pass
-                    else:
-                        dst.write(record)
-
-            # write new files based on the input data
-            for new_fire in fire_list:
-                new_feature = feature_template.copy()
-                new_feature['geometry']['coordinates'] = (float(new_fire['lon']), float(new_fire['lat']))
-                new_feature['properties']['fire_type'] = new_fire['fire_type']
-
-                # read in timtestamp as string, convert to date, then format to match GPKG standard
-                formatted_date = datetime.datetime.strptime(new_fire['fire_date'], '%m/%d/%Y %H:%M:%S').date().strftime('%Y-%m-%d')
-                new_feature['properties']['fire_date'] = formatted_date
-                dst.write(new_feature)
-
-    return temp_gpkg
+    date_str = "', '".join(update_dates)
+    sql_str = "DELETE FROM data WHERE fire_type = '{}' AND fire_date IN ('{}')".format(fire_type, date_str)
+    cur.execute(sql_str)
+       
+    conn.commit()
+    conn.close()
 
 
 def write_fire_tile_to_s3(fire_list, fire_type, tile_id):
@@ -172,10 +170,4 @@ def write_fire_tile_to_s3(fire_list, fire_type, tile_id):
     s3.put_object(Bucket=bucket_name, Key=out_s3_path, Body=json.dumps(fire_list))
 
     return 's3://{}/{}'.format(bucket_name, out_s3_path)
-
-
-def read_fire_list_from_s3(s3_path):
-
-    s3_obj = s3_to_object(s3_path)
-    return json.loads(s3_obj)
 

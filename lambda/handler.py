@@ -123,6 +123,8 @@ def update_fire_tile(event, context):
     fire_type = event['queryStringParameters']['fire_type']
     fire_data = event['body']['fire_data']
 
+    print tile_id
+
     # download current gpkg
     local_gpkg = gpkg_etl.download_gpkg(tile_id)
 
