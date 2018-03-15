@@ -17,7 +17,9 @@ def serialize_fire_analysis(date_list, tile_id):
     return http_response({tile_id: date_list})
 
 
-def serialize_fire_alerts(date_list, agg_by):
+def serialize_fire_alerts(date_list, params):
+
+    agg_by = params['aggregate_by']
 
     if agg_by != 'all':
         date_list = date_list[agg_by]
@@ -29,11 +31,14 @@ def serialize_fire_alerts(date_list, agg_by):
         "attributes": {
             "downloadUrls": None,
             "value": date_list},
-        "period": None,
-        "type": "fire-alerts"}
+        "period": params['period'],
+        "type": "fire-alerts",
+        "fire-type": params['fire_type']
+        }
     }
 
     return http_response(serialized)
+
 
 def api_error(msg):
     print msg
@@ -42,3 +47,19 @@ def api_error(msg):
         'headers': {'Access-Control-Allow-Origin': '*'},
         'body': json.dumps({'error': msg})
             }
+
+
+def serialize_layer_extent(layer, geom_is_valid):
+   
+    serialized = {
+    "data": {
+        "attributes": {"geom-within-coverage": geom_is_valid},
+        "type": layer
+        }
+    }
+
+    return http_response(serialized)
+
+
+
+

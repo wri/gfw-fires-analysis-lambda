@@ -3,6 +3,7 @@ import subprocess
 
 from shapely.geometry import shape, Polygon
 import fiona
+import boto3
 
 # https://stackoverflow.com/a/31602136/4355916
 from gevent import monkey
@@ -27,6 +28,27 @@ def find_tiles(geom):
     return int_tiles
 
 
+def check_layer_coverage(layer, geom):
+
+    # need to read it in as bytes first because it's zipped on s3
+    s3 = boto3.resource('s3')
+    bucket = 'gfw2-data'
+    key = 'forest_change/umd_landsat_alerts/zip/glad_coverage.zip'
+
+    glad_obj = s3.Object(bucket, key)
+    as_bytes = glad_obj.get()['Body'].read()
+
+    geom_intersects = False
+
+    with fiona.BytesCollection(as_bytes) as src:
+        for record in src:
+            if shape(record['geometry']).intersects(geom):
+                geom_intersects = True
+                break
+
+    return geom_intersects
+
+    
 def point_stats(geom, tile_id, fire_type_list, period):
     # returns fire points within aoi within tile
 

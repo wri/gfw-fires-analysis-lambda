@@ -37,6 +37,29 @@ def get_shapely_geom(event):
     return aoi_geom
 
 
+def validate_extent_params(event):
+
+    params = event['queryStringParameters']
+
+    if not params:
+        params = {}
+
+    # may add MODIS or VIIRS at some point
+    valid_layers = ['glad']
+
+    try:
+        layer_name = params['layer'].lower()
+    except KeyError:
+        raise ValueError('Query parameter layer must included')
+
+    if layer_name not in valid_layers:
+        raise ValueError('Layer must be one of {}'.format(', '.join(valid_layers)))
+
+    geom = get_shapely_geom(event) 
+
+    return layer_name, geom
+
+
 def grouped_and_to_rows(keys, vals, agg_type):
 
     # source: https://jakevdp.github.io/blog/2017/03/22/group-by-from-scratch/
