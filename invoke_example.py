@@ -7,7 +7,7 @@ client = boto3.client('lambda')
 # first, upload a day's worth of fires (one type only) to
 # somewhere on s3
 fire_type = 'VIIRS'
-fire_csv = 's3://gfw2-data/alerts-tsv/temp/fires/viirs/2017-08-21.csv'
+fire_csv = 's3://gfw2-data/alerts-tsv/temp/fires/update20180312/20180307_viirs.csv'
 
 # then build an event to kick off the process
 event = {'queryStringParameters': {'fire_csv': fire_csv, 'fire_type': fire_type}}
