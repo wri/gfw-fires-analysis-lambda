@@ -157,7 +157,7 @@ if __name__ == '__main__':
     event = {
             'body': json.dumps({'geojson': aoi, 'fire_data': fire_data, 'fire_csv': fire_csv}),
             #'body': {'fire_data': fire_data},
-            'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'tile_id': '00N_116E', 'fire_type': 'modis', 'period': '2017-04-01,2018-02-02'}
+            'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'tile_id': '00N_116E', 'fire-type': 'all', 'period': '2017-04-01,2018-02-02'}
             }
 
     print fire_alerts(event, None)

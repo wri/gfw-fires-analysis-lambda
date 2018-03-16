@@ -91,7 +91,7 @@ def clean_fire_type_input(fire_type):
         if fire_type.lower() in valid_fire_list:
             return fire_type.lower()
         else:
-            msg = 'For this batch service, fire_type must be in {}'.format(', '.join(valid_fire_list))
+            msg = 'For this batch service, fire_type must one of {}'.format(', '.join(valid_fire_list))
             raise ValueError(msg)
 
     else:
@@ -157,7 +157,7 @@ def validate_params(event):
     # if fire type not supplied, set to all (modis and viirs)
     fire_type = params.get('fire_type')
     if not fire_type:
-        params['fire_type'] = 'all'
+        raise ValueError('fire_type query parameter must be set')
 
     # if fire type is misspelled, correct it
     params['fire_type'] = clean_fire_type_input(fire_type)
