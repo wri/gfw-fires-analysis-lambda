@@ -49,4 +49,19 @@ functions:
 
   update-fire-tile:
     handler: handler.update_fire_tile
-    
+
+  nightly-fires-update:
+    handler: handler.nightly_fires_update
+    events:
+      - schedule: 
+          # run at 5:05 UTC (12:05 or 1:05 EDT, depending on daylight savings)
+          rate: cron(5 5 * * ? *) 
+          input:
+            fire_type: VIIRS
+        # run at 5:15 UTC
+      - schedule:
+          rate: cron(15 0 * * ? *)
+          input:
+            fire_type: MODIS
+
+

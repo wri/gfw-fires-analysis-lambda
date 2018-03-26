@@ -120,9 +120,6 @@ def update_geopackage(src_gpkg, fire_list, fire_type):
     if isinstance(fire_list, basestring):
         fire_list = [x for x in csv.DictReader(s3_to_csv_reader(fire_list))]
 
-    # delete any fires of our type and on the dates we're updating
-    delete_identical_fires(src_gpkg, fire_type, fire_list)
-
     # open source geopackage to write new data
     with fiona.open(src_gpkg, 'a', schema=schema, driver='GPKG', layer='data') as src:
 
@@ -137,23 +134,24 @@ def update_geopackage(src_gpkg, fire_list, fire_type):
             new_feature['properties']['fire_date'] = formatted_date
             src.write(new_feature)
 
+    # after we've added our new data, delete any duplicate fires
+    # based on lat/lon/fire_type/fire_date
+    delete_duplicate_fires(src_gpkg)
+
     return src_gpkg
 
 
-def delete_identical_fires(src_gpkg, fire_type, fire_list):
+def delete_duplicate_fires(src_gpkg):
 
-    # get list of dates we're updating
-    # don't want any overlap between dates we're updating an data in gpkg
-    update_dates = set([datetime.datetime.strptime(x['ACQ_DATE'], '%m/%d/%Y %H:%M:%S').date().strftime('%Y-%m-%d') 
-                          for x in fire_list])
-
-    # connect to GPKG and delete any data that we're updating currently,
-    # based on fire_date and fire_type
+    # connect to GPKG and delete any duplicate data 
     conn = sqlite3.connect(src_gpkg)
     cur = conn.cursor()
 
-    date_str = "', '".join(update_dates)
-    sql_str = "DELETE FROM data WHERE fire_type = '{}' AND fire_date IN ('{}')".format(fire_type, date_str)
+    sql_str = ("DELETE FROM data " 
+               "WHERE rowid NOT IN ( "
+               "SELECT min(rowid) "
+               "FROM data "
+               "GROUP BY geom, fire_type, fire_date);")
     cur.execute(sql_str)
        
     conn.commit()

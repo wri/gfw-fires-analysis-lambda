@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import datetime
 import json
 
 # add path to included packages
@@ -10,7 +11,7 @@ sys.path.insert(0, os.path.join(path, 'lib/python2.7/site-packages'))
 import boto3
 import grequests
 
-from utilities import util, geoprocessing, serializers, gpkg_etl
+from utilities import util, geoprocessing, serializers, gpkg_etl, combine_fires_s3
 
 
 # https://stackoverflow.com/a/2588054/4355916
@@ -20,6 +21,9 @@ if root.handlers:
         root.removeHandler(handler)
 
 logging.basicConfig(format='%(asctime)s %(message)s',level=logging.ERROR)
+
+client = boto3.client('lambda')
+
 
 def fire_analysis(event, context):
 
@@ -95,8 +99,6 @@ def bulk_fire_upload(event, context):
     # then return {'11N_072E': [{'fire_date': '2015-01-01, 'fire_type': 'VIIRS'} ...]}
     tile_dict = gpkg_etl.bulk_fires_to_tile(s3_path)
 
-    client = boto3.client('lambda')
-
     # invoke individual lambda functions to update data
     # for each GPKG stored
     for tile_id, fires_list in tile_dict.iteritems():
@@ -133,6 +135,23 @@ def update_fire_tile(event, context):
 
     # overwrite GPKG on s3
     gpkg_etl.save_to_s3(tile_id, updated_gpkg)
+
+    return None
+
+
+def nightly_fires_update(event, context):
+
+    params = event['queryStringParameters']
+    fire_type = params.get('fire_type').upper()
+
+    today = datetime.datetime.now()
+    yesterday = (today - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    fire_date = params.get('fire_date', yesterday)
+
+    combined_s3_file = combine_fires_s3.combine(fire_type, fire_date)
+
+    invoke_event = {'queryStringParameters': {'fire_csv': combined_s3_file, 'fire_type': fire_type}}
+    client.invoke(FunctionName='fire-alerts-dev-bulk-fire-upload', InvocationType='Event', Payload=json.dumps(invoke_event))
 
     return None
 
