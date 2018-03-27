@@ -60,7 +60,7 @@ functions:
             fire_type: VIIRS
         # run at 5:15 UTC
       - schedule:
-          rate: cron(15 0 * * ? *)
+          rate: cron(15 5 * * ? *)
           input:
             fire_type: MODIS
 

@@ -141,8 +141,12 @@ def update_fire_tile(event, context):
 
 def nightly_fires_update(event, context):
 
-    params = event['queryStringParameters']
-    fire_type = params.get('fire_type').upper()
+    # uses event['fire_type'] in case of direct invocation from cloudwatch cron job
+    try:
+        params = event['queryStringParameters']
+        fire_type = params.get('fire_type').upper()
+    except KeyError:
+        fire_type = event['fire_type']
 
     today = datetime.datetime.now()
     yesterday = (today - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
