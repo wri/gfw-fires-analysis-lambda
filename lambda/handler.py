@@ -147,6 +147,7 @@ def nightly_fires_update(event, context):
         fire_type = params.get('fire_type').upper()
     except KeyError:
         fire_type = event['fire_type']
+        params = {}
 
     today = datetime.datetime.now()
     yesterday = (today - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
