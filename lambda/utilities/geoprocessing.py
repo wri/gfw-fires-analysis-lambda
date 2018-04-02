@@ -1,9 +1,11 @@
 import datetime
 import subprocess
+import json
 
 from shapely.geometry import shape, Polygon
 import fiona
 import boto3
+
 
 # https://stackoverflow.com/a/31602136/4355916
 from gevent import monkey
@@ -27,7 +29,6 @@ def find_tiles(geom):
 
     return int_tiles
 
-
 def check_layer_coverage(layer, geom):
 
     # need to read it in as bytes first because it's zipped on s3
@@ -48,7 +49,7 @@ def check_layer_coverage(layer, geom):
 
     return geom_intersects
 
-    
+
 def point_stats(geom, tile_id, fire_type_list, period):
     # returns fire points within aoi within tile
 
