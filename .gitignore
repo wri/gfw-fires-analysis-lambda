@@ -4,3 +4,4 @@ lambda-deploy.zip
 .serverless/*
 lambda/lib/
 env/
+*.DS_Store
