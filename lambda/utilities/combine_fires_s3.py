@@ -61,7 +61,7 @@ def combine(fire_type, fire_date):
     writer = csv.writer(out_csv)
 
     # write header row
-    writer.writerow(['LATITUDE', 'LONGITUDE', 'ACQ_DATE'])
+    writer.writerow(['LATITUDE', 'LONGITUDE', 'ACQ_DATE', 'FIRE_TYPE'])
 
     # iterate over the file list, reading each in as string
     for s3_csv in csv_list:
@@ -79,10 +79,10 @@ def combine(fire_type, fire_date):
             row_date = datetime.datetime.strptime(row['fire_datetime'], '%Y/%m/%d %H:%M:%S')
             row_date_fmt = row_date.strftime('%m/%d/%Y %H:%M:%S')
 
-            writer.writerow([row['latitude'], row['longitude'], row_date_fmt])
+            writer.writerow([row['latitude'], row['longitude'], row_date_fmt, fire_type])
 
     output_bucket = 'palm-risk-poc'
-    output_key = 'temp/fires/{}/{}.csv'.format(fire_type, fire_date)
+    output_key = 'data/fires-export/{}-{}.csv'.format(fire_type, fire_date)
        
     s3_output = s3.Object(output_bucket, output_key)
     s3_output.put(Body=out_csv.getvalue())
