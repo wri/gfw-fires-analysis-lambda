@@ -22,7 +22,7 @@ if root.handlers:
 
 logging.basicConfig(format='%(asctime)s %(message)s',level=logging.ERROR)
 
-client = boto3.client('lambda')
+client = boto3.client('lambda', region_name='us-east-1')
 
 def grid_geom(event, context):
     try:
@@ -195,4 +195,4 @@ if __name__ == '__main__':
             'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'tile_id': '00N_116E', 'fire-type': 'all', 'period': '2017-04-01,2018-02-02'}
             }
 
-    grid_geom(event, None)
+    print grid_geom(event, None)

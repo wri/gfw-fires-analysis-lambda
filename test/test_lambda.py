@@ -6,7 +6,7 @@ import logging
 import datetime
 from dateutil.relativedelta import relativedelta
 import copy
-
+from shapely.geometry import shape
 
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 lambda_dir = os.path.join(root_dir, "lambda")
@@ -135,7 +135,7 @@ class TestBogusInputs(TestCase):
 
     def test_bad_firetype(self):
         payload = copy.deepcopy(self.payload)
-        payload['queryStringParameters']['fire_type'] = 'merdis'
+        payload['queryStringParameters']['fire_type'] = 'modis'
 
         valid_fire_list = ['viirs', 'modis', 'all']
 
@@ -175,3 +175,31 @@ class TestAnalysis(TestCase):
         test_date = '2016-01-09'
         test_count = self.date_list[test_date]
         self.assertEqual(test_count, 65)
+
+class TestGridGeom(TestCase):
+
+    def setUp(self):
+        aoi = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[[22.269287109374996,3.5298694189563014],[21.665039062499996,2.8772079526533365],[22.483520507812496,2.701635047944533],[22.7362060546875,2.871721700059574],[22.774658203125,3.299566301217904],[22.74169921875,3.568247821628616],[22.664794921874996,3.5956599859799567],[22.269287109374996,3.5298694189563014]]]}}]}
+
+        event = {
+                'body': json.dumps({'geojson': aoi})
+                }
+
+        self.result = json.loads(handler.grid_geom(event, None))
+
+    def test_tile_num(self):
+
+        self.assertEqual(len(self.result['features']), 20)
+
+    def test_tile_name_area(self):
+
+        # this is what all the tile areas should be
+        name_area_dict = {u'3.0_22.25': 0.06249304274180769, u'3.75_22.0': 3.7804640896085374e-05, u'3.25_21.75': 0.026443375871698607, u'3.25_22.75': 0.002270845881295429, u'3.5_22.75': 0.003590110003115604, u'3.75_22.25': 0.011693586229590248, u'3.0_21.5': 0.004672561637029896, u'3.5_22.25': 0.0625, u'3.0_21.75': 0.041512177702646556, u'2.75_22.5': 0.0010319379686139648, u'3.25_22.0': 0.06244405449584339, u'3.5_22.0': 0.031023583826069068, u'3.75_22.75': 2.0624670245135734e-08, u'3.5_22.5': 0.0625, u'3.25_22.25': 0.0625, u'2.75_22.25': 0.006157968848202763, u'3.75_22.5': 0.020093809259872537, u'3.0_22.5': 0.0487853047693316, u'3.0_22.0': 0.05536463021633692, u'3.25_22.5': 0.062471457600091845}
+
+        for feature in self.result['features']:
+
+            # find the tile name and area, then look it up in the dictionary, assert they are the same
+            grid_area = shape(feature['geometry']).area
+            grid_name = feature['properties']['id']
+
+            self.assertEqual(name_area_dict[grid_name], grid_area)

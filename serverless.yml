@@ -35,7 +35,7 @@ functions:
             path: fire-analysis
             method: post
             cors: true
-    
+
   validate-layer-extent:
     handler: handler.validate_layer_extent
     events:
@@ -50,12 +50,15 @@ functions:
   update-fire-tile:
     handler: handler.update_fire_tile
 
+  grid-geom:
+    handler: handler.grid_geom
+
   nightly-fires-update:
     handler: handler.nightly_fires_update
     events:
-      - schedule: 
+      - schedule:
           # run at 5:05 UTC (12:05 or 1:05 EDT, depending on daylight savings)
-          rate: cron(5 5 * * ? *) 
+          rate: cron(5 5 * * ? *)
           input:
             fire_type: VIIRS
         # run at 5:15 UTC
@@ -63,5 +66,3 @@ functions:
           rate: cron(15 5 * * ? *)
           input:
             fire_type: MODIS
-
-
