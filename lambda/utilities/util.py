@@ -39,10 +39,10 @@ def get_shapely_geom(event):
         else:
             raise ValueError('GeoJSON input not formatted properly')
 
-    if 'Polygon' not in aoi_geom.type:
+    if 'Polygon' not in geom.type:
         raise ValueError('Geometry type must be polygon or multipolygon')
 
-    return aoi_geom
+    return geom
 
 
 def validate_extent_params(event):
