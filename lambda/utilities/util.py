@@ -19,17 +19,25 @@ def get_shapely_geom(event):
     if not isinstance(geojson, dict):
         raise ValueError('Unable to decode input geojson')
 
-    if not geojson.get('features'):
-        raise ValueError('No features in geojson')
+    if geojson['type'].lower() == 'featurecollection':
 
-    if len(geojson['features']) > 1:
-        raise ValueError('Currently accepting only 1 feature at a time')
+        if len(geojson['features']) > 1:
+            raise ValueError('Currently accepting only 1 feature at a time')
 
-    # grab the actual geometry-- that's the level on which shapely operates
-    try:
-        aoi_geom = shape(geojson['features'][0]['geometry'])
-    except:
-        raise ValueError('Unable to decode input geojson')
+        # grab the actual geometry-- that's the level on which shapely operates
+        try:
+            geom = shape(geojson['features'][0]['geometry'])
+        except:
+            raise ValueError('Unable to decode input geojson')
+
+    else:
+        if geojson.get('geometry'):
+            try:
+                geom = shape(geojson['geometry'])
+            except:
+                raise ValueError('Unable to decode input geojson')
+        else:
+            raise ValueError('GeoJSON input not formatted properly')
 
     if 'Polygon' not in aoi_geom.type:
         raise ValueError('Geometry type must be polygon or multipolygon')
