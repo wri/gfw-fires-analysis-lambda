@@ -77,7 +77,7 @@ def combine(fire_type, fire_date):
 
             # format row date into m/d/Y expected later on
             row_date = datetime.datetime.strptime(row['fire_datetime'], '%Y/%m/%d %H:%M:%S')
-            row_date_fmt = row_date.strftime('%m/%d/%Y %H:%M:%S')
+            row_date_fmt = row_date.strftime('%Y/%m/%d')
 
             writer.writerow([row['latitude'], row['longitude'], row_date_fmt, fire_type])
 

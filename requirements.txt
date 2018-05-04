@@ -1,4 +1,4 @@
-git+https://github.com/Toblerity/Fiona
+git+https://github.com/Toblerity/Fiona@d055579f3856a06880452ee33b3420e35e8cd579
 Shapely==1.6.4.post1
 grequests==0.3.0
 requests==2.18.2

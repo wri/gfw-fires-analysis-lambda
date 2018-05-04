@@ -88,9 +88,9 @@ class TestBogusInputs(TestCase):
         payload = copy.deepcopy(self.payload)
 
         today = datetime.datetime.now().date()
-        last_year_and_one_day = today - relativedelta(years=1, days=1)
+        last_year_and_two_days = today - relativedelta(years=1, days=2)
 
-        period = last_year_and_one_day.strftime('%Y-%m-%d') + ',' + today.strftime('%Y-%m-%d')
+        period = last_year_and_two_days.strftime('%Y-%m-%d') + ',' + today.strftime('%Y-%m-%d')
         payload['queryStringParameters']['period'] = period
 
         self.assertEqual(self.run_fire_alerts(payload), 'Start date must be more recent than one year ago')
@@ -135,11 +135,11 @@ class TestBogusInputs(TestCase):
 
     def test_bad_firetype(self):
         payload = copy.deepcopy(self.payload)
-        payload['queryStringParameters']['fire_type'] = 'modis'
+        payload['queryStringParameters']['fire_type'] = 'not-a-real-fire-type'
 
         valid_fire_list = ['viirs', 'modis', 'all']
 
-        self.assertEqual(self.run_fire_alerts(payload), 'For this batch service, fire_type must be in {}'.format(', '.join(valid_fire_list)))
+        self.assertEqual(self.run_fire_alerts(payload), 'For this batch service, fire_type must be one of {}'.format(', '.join(valid_fire_list)))
 
     def test_garbage_geojson(self):
         aoi = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[]}}]}

@@ -99,7 +99,7 @@ def clean_fire_type_input(fire_type):
         if fire_type.lower() in valid_fire_list:
             return fire_type.lower()
         else:
-            msg = 'For this batch service, fire_type must one of {}'.format(', '.join(valid_fire_list))
+            msg = 'For this batch service, fire_type must be one of {}'.format(', '.join(valid_fire_list))
             raise ValueError(msg)
 
     else:
@@ -135,7 +135,11 @@ def validate_params(event):
         params = {}
 
     today = datetime.datetime.now().date()
-    last_year = today - relativedelta(years=1)
+
+    # include last year - one day, because today's update will come at the end of the day
+    # so if today is May 5 2018, want to include data from May 4 2017, because we
+    # don't have data from May 5 2018 in our GPKGs yet
+    last_year = today - relativedelta(years=1, days=1)
     default_period = last_year.strftime('%Y-%m-%d') + ',' + today.strftime('%Y-%m-%d')
 
     period = params.get('period', default_period)

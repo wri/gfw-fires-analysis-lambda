@@ -57,12 +57,12 @@ functions:
     handler: handler.nightly_fires_update
     events:
       - schedule:
-          # run at 5:05 UTC (12:05 or 1:05 EDT, depending on daylight savings)
-          rate: cron(5 5 * * ? *)
+          # run at 12:05 UTC 
+          rate: cron(5 12 * * ? *)
           input:
             fire_type: VIIRS
-        # run at 5:15 UTC
+        # run at 12:15 UTC
       - schedule:
-          rate: cron(15 5 * * ? *)
+          rate: cron(15 12 * * ? *)
           input:
             fire_type: MODIS

@@ -130,7 +130,7 @@ def update_geopackage(src_gpkg, fire_list, fire_type):
             new_feature['properties']['fire_type'] = fire_type
 
             # read in timtestamp as string, convert to date, then format to match GPKG standard
-            formatted_date = datetime.datetime.strptime(new_fire['ACQ_DATE'], '%m/%d/%Y %H:%M:%S').date().strftime('%Y-%m-%d')
+            formatted_date = datetime.datetime.strptime(new_fire['ACQ_DATE'], '%Y/%m/%d').date().strftime('%Y-%m-%d')
             new_feature['properties']['fire_date'] = formatted_date
             src.write(new_feature)
 
