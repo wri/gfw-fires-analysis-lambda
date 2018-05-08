@@ -58,11 +58,11 @@ functions:
     events:
       - schedule:
           # run at 12:05 UTC 
-          rate: cron(5 12 * * ? *)
+          rate: cron(5 0 * * ? *)
           input:
             fire_type: VIIRS
         # run at 12:15 UTC
       - schedule:
-          rate: cron(15 12 * * ? *)
+          rate: cron(15 0 * * ? *)
           input:
             fire_type: MODIS
