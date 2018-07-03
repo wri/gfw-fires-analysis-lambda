@@ -130,16 +130,14 @@ def validate_layer_extent(event, context):
 
 if __name__ == '__main__':
 
-    with open('test_geom.geojson') as thefile:
-        aoi = json.load(thefile)
-    # aoi = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[[22.269287109374996,3.5298694189563014],[21.665039062499996,2.8772079526533365],[22.483520507812496,2.701635047944533],[22.7362060546875,2.871721700059574],[22.774658203125,3.299566301217904],[22.74169921875,3.568247821628616],[22.664794921874996,3.5956599859799567],[22.269287109374996,3.5298694189563014]]]}}]}
+    aoi = {"type": "FeatureCollection", "name": "test_geom", "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } }, "features": [ { "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 19.607011190476182, -8.765827380952395 ], [ 25.652106428571422, -14.702001984126998 ], [ 25.652106428571422, -14.702001984126998 ], [ 21.485892142857136, -19.848501984126997 ], [ 14.406050873015866, -17.397787698412714 ], [ 14.215439761904756, -11.162081349206364 ], [ 19.607011190476182, -8.765827380952395 ] ] ] } } ] }
 
     # why this crazy structure? Oh lambda . . . sometimes I wonder
     fire_csv = 's3://gfw2-data/alerts-tsv/temp/fires-temp-10.csv'
     fire_data = [{'lat': '53.01', 'lon': '127.24700000000001', 'fire_type': 'MODIS', 'fire_date': '2016-04-30'}]
     event = {
             'body': json.dumps({'geojson': aoi, 'fire_data': fire_data, 'fire_csv': fire_csv}),
-            'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'fire_type': 'all', 'period': '2017-06-25,2018-07-02'}
+            'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'fire_type': 'all', 'period': '2018-06-25,2018-07-02'}
             }
 
     print fire_alerts(event, None)

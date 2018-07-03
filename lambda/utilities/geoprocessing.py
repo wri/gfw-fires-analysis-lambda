@@ -75,6 +75,7 @@ def point_stats(geom, period, local_gpkg=None):
                     date_counts[fire_date] = 1
 
     # looks like {2016-05-09: 15, 2016-05-13:20}
+    print "\n*********DATE COUNTS: {}".format(date_counts)
     return date_counts
 
 

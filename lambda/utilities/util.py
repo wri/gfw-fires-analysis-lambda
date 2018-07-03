@@ -189,7 +189,7 @@ def check_dates(period, last_8_days):
         raise ValueError('Start date must be <= end date')
 
     if start_date < last_8_days:
-        raise ValueError('Start date must be more recent than one year ago')
+        raise ValueError('Start date must be more recent than 8 days ago')
 
 
 def period_to_dates(period):
