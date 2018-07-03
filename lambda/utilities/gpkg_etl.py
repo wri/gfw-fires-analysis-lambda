@@ -63,16 +63,18 @@ def get_bucket():
     return bucket
 
 
-def download_gpkg(tile_id):
+def download_gpkg():
 
     # weirdly this seems 2x - 3x as fast as reading directly from s3
     # maybe spatial index isn't used when reading from s3?
     bucket = get_bucket()
 
-    gpkg_src = 'data/fires-one-by-one/{}/data.gpkg'.format(tile_id)
+    gpkg_src = 'data/fires-one-gpkg/data.gpkg'
     local_gpkg = '/tmp/data.gpkg'
 
     try:
+        print "downloading bucket"
+        print local_gpkg
         bucket.download_file(gpkg_src, local_gpkg)
 
     # if it doesn't exist create a dummy geopackage

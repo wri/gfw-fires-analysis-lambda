@@ -12,11 +12,6 @@ def http_response(response):
             }
 
 
-def serialize_fire_analysis(date_list, tile_id):
-
-    return http_response({tile_id: date_list})
-
-
 def serialize_fire_alerts(date_list, params):
 
     agg_by = params['aggregate_by']

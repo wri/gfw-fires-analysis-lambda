@@ -81,7 +81,7 @@ def grouped_and_to_rows(keys, vals, agg_type):
     for key, val in grouped.iteritems():
 
         if agg_type == 'year':
-	    row = {agg_type: key}
+            row = {agg_type: key}
         else:
             row = {'year': key[0], agg_type: key[1]}
 
@@ -139,14 +139,14 @@ def validate_params(event):
     # include last year - one day, because today's update will come at the end of the day
     # so if today is May 5 2018, want to include data from May 4 2017, because we
     # don't have data from May 5 2018 in our GPKGs yet
-    last_year = today - relativedelta(years=1, days=1)
-    default_period = last_year.strftime('%Y-%m-%d') + ',' + today.strftime('%Y-%m-%d')
+    last_8_days = today - relativedelta(days=8)
+    default_period = last_8_days.strftime('%Y-%m-%d') + ',' + today.strftime('%Y-%m-%d')
 
     period = params.get('period', default_period)
     params['period'] = period
 
     try:
-        check_dates(period, last_year)
+        check_dates(period, last_8_days)
     except ValueError, e:
         raise ValueError(e)
 
@@ -177,7 +177,7 @@ def validate_params(event):
     return params
 
 
-def check_dates(period, last_year):
+def check_dates(period, last_8_days):
 
     try:
         start_date, end_date = period_to_dates(period)
@@ -188,7 +188,7 @@ def check_dates(period, last_year):
     if start_date > end_date:
         raise ValueError('Start date must be <= end date')
 
-    if start_date < last_year:
+    if start_date < last_8_days:
         raise ValueError('Start date must be more recent than one year ago')
 
 

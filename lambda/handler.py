@@ -9,9 +9,8 @@ path = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(path, 'lib/python2.7/site-packages'))
 
 import boto3
-import grequests
 
-from utilities import util, geoprocessing, serializers, gpkg_etl, combine_fires_s3, tile_geom_util
+from utilities import util, geoprocessing, serializers, gpkg_etl, combine_fires_s3
 
 
 # https://stackoverflow.com/a/2588054/4355916
@@ -24,74 +23,21 @@ logging.basicConfig(format='%(asctime)s %(message)s',level=logging.ERROR)
 
 client = boto3.client('lambda', region_name='us-east-1')
 
-def grid_geom(event, context):
-    try:
-        geom = util.get_shapely_geom(event)
-    except ValueError, e:
-        return serializers.api_error(str(e))
-
-    return tile_geom_util.tile_geom(geom)
-
-
-
-def fire_analysis(event, context):
-
-    geom = util.get_shapely_geom(event)
-    tile_id = event['queryStringParameters']['tile_id']
-    fire_type = event['queryStringParameters']['fire_type']
-    period = event['queryStringParameters']['period']
-
-    if fire_type == 'all':
-        fire_type = ['VIIRS', 'MODIS']
-    else:
-        fire_type = [fire_type.upper()]
-
-    date_list = geoprocessing.point_stats(geom, tile_id, fire_type, period) # looks like {'2016-05-09': 15, '2016-05-10': 200, '2016:-5-11': 52}
-
-    # makes json formatted info of tile_id: date list
-    return serializers.serialize_fire_analysis(date_list, tile_id) # {'10N_010E': {'2016-05-09': 15, '2016-05-10': 200, '2016:-5-11': 52}}
-
 
 def fire_alerts(event, context):
 
     try:
         geom = util.get_shapely_geom(event)
-    except ValueError, e:
-        return serializers.api_error(str(e))
-
-    area_ha = util.get_polygon_area(geom)
-    payload = {'geojson': json.loads(event['body'])['geojson']}
-
-    try:
         params = util.validate_params(event)
     except ValueError, e:
         return serializers.api_error(str(e))
 
-    # send list of tiles to another enpoint called fire_analysis(geom, tile)
-    url = 'https://u81la7we82.execute-api.us-east-1.amazonaws.com/dev/fire-analysis'
-    request_list = []
+    period = event['queryStringParameters']['period']
 
-    # get list of tiles that intersect the aoi
-    tiles = geoprocessing.find_tiles(geom)
+    date_count_dict = geoprocessing.point_stats(geom, period)  # looks like {'2016-05-09': 15, '2016-05-10': 200}
 
-    # add specific analysis type for each request
-    for tile in tiles:
-        new_params = params.copy()
-        new_params['tile_id'] = tile
-
-        request_list.append(grequests.post(url, json=payload, params=new_params))
-
-    # execute these requests in parallel
-    response_list = grequests.map(request_list, size=len(tiles))
-
-    # merged_date_list looks like {datetime.datetime(2016, 6, 3, 0, 0): 12, datetime.datetime(2016, 4, 4, 0, 0): 14
-    try:
-        merged_date_list = geoprocessing.merge_dates(response_list, tiles)
-    except KeyError, e:
-        return serializers.api_error(str(e))
-
-     # aggregate by
-    resp_dict = geoprocessing.create_resp_dict(merged_date_list)
+    # aggregate by day, year, month, etc
+    resp_dict = geoprocessing.create_resp_dict(date_count_dict)
 
     return serializers.serialize_fire_alerts(resp_dict, params)
 
@@ -184,15 +130,16 @@ def validate_layer_extent(event, context):
 
 if __name__ == '__main__':
 
-    aoi = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[[22.269287109374996,3.5298694189563014],[21.665039062499996,2.8772079526533365],[22.483520507812496,2.701635047944533],[22.7362060546875,2.871721700059574],[22.774658203125,3.299566301217904],[22.74169921875,3.568247821628616],[22.664794921874996,3.5956599859799567],[22.269287109374996,3.5298694189563014]]]}}]}
+    with open('test_geom.geojson') as thefile:
+        aoi = json.load(thefile)
+    # aoi = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[[22.269287109374996,3.5298694189563014],[21.665039062499996,2.8772079526533365],[22.483520507812496,2.701635047944533],[22.7362060546875,2.871721700059574],[22.774658203125,3.299566301217904],[22.74169921875,3.568247821628616],[22.664794921874996,3.5956599859799567],[22.269287109374996,3.5298694189563014]]]}}]}
 
     # why this crazy structure? Oh lambda . . . sometimes I wonder
     fire_csv = 's3://gfw2-data/alerts-tsv/temp/fires-temp-10.csv'
     fire_data = [{'lat': '53.01', 'lon': '127.24700000000001', 'fire_type': 'MODIS', 'fire_date': '2016-04-30'}]
     event = {
             'body': json.dumps({'geojson': aoi, 'fire_data': fire_data, 'fire_csv': fire_csv}),
-            #'body': {'fire_data': fire_data},
-            'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'tile_id': '00N_116E', 'fire-type': 'all', 'period': '2017-04-01,2018-02-02'}
+            'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'fire_type': 'all', 'period': '2017-06-25,2018-07-02'}
             }
 
-    print grid_geom(event, None)
+    print fire_alerts(event, None)
