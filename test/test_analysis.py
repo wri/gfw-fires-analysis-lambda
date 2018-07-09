@@ -27,25 +27,19 @@ class TestAnalysis(TestCase):
                      [14.406050873015866, -17.397787698412714], [14.215439761904756, -11.162081349206364],
                      [19.607011190476182, -8.765827380952395]]]}}]}
 
-        payload = {
-            'body': json.dumps({'geojson': aoi}),
-            'queryStringParameters': {'period': '2016-01-01,2017-01-01'}
-        }
         geom = shape(aoi['features'][0]['geometry'])
-        period = '2017-01-01,2017-12-01'
+        period = '2017-01-01,2018-01-01'
         local_geopackage = '/home/geolambda/test/data.gpkg'
+
         result = geoprocessing.point_stats(geom, period, local_geopackage)
 
-        print "\n******RESULT: {}".format(result)
-        self.date_list = json.loads(result)
+        # get the date format correct
+        self.date_dict = {k.strftime("%Y-%m-%d"): int(v) for k, v in result.items()}
 
-    def test_run_lambda_len(self):
-        """ Run the lambda handler with test payload """
+        print "\n******RESULT: {}".format(self.date_dict)
 
-        self.assertEqual(len(self.date_list), 135)
+    def test_run_lambda_dict_result(self):
 
-    def test_run_lambda_count(self):
+        true_result = {'2017-08-26': 29, '2017-08-27': 314, '2017-08-28': 480}
 
-        test_date = '2016-01-09'
-        test_count = self.date_list[test_date]
-        self.assertEqual(test_count, 65)
+        self.assertEqual(self.date_dict, true_result)

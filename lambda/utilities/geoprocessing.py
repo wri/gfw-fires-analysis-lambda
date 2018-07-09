@@ -68,21 +68,20 @@ def point_stats(geom, period, local_gpkg=None):
             fire_date = datetime.datetime.strptime(pt['properties']['fire_date'], '%Y-%m-%d').date()
 
             if (end_date >= fire_date >= start_date) and fire_geom.intersects(geom):
-
                 try:
                     date_counts[fire_date] += 1
                 except KeyError:
                     date_counts[fire_date] = 1
 
-    # looks like {2016-05-09: 15, 2016-05-13:20}
-    print "\n*********DATE COUNTS: {}".format(date_counts)
+    # looks like {datetime.date(2017, 8, 28): 823}
+
     return date_counts
 
 
 def create_resp_dict(date_dict):
 
-    alert_date = date_dict.keys() # alert date = datetime.datetime(2015, 6, 4, 0, 0)
-    alert_count = date_dict.values() # count
+    alert_date = date_dict.keys()  # alert date = datetime.datetime(2015, 6, 4, 0, 0)
+    alert_count = date_dict.values()  # count
 
     resp_dict = {
                  'year': util.grouped_and_to_rows([x.year for x in alert_date], alert_count, 'year'),

@@ -5,3 +5,7 @@ lambda-deploy.zip
 lambda/lib/
 env/
 *.DS_Store
+*.gpkg-wal
+.idea/
+.ipynb_checkpoints/
+*.ipynb
