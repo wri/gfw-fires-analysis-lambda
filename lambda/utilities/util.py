@@ -1,5 +1,7 @@
 import json
 import datetime
+import subprocess
+import os
 from dateutil.relativedelta import relativedelta
 from collections import defaultdict
 from functools import partial
@@ -199,3 +201,11 @@ def period_to_dates(period):
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
 
     return start_date, end_date
+
+
+def s3_download(path):
+    cmd = ['aws', 's3', 'cp', path, '.']
+    subprocess.check_call(cmd)
+    file = path.split('/')[-1:]
+    if os.path.exists(file):
+        return file

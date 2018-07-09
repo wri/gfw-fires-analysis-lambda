@@ -1,7 +1,6 @@
 import os
 import sys
 import logging
-import datetime
 import json
 
 # add path to included packages
@@ -94,25 +93,31 @@ def update_fire_tile(event, context):
     return None
 
 
-def nightly_fires_update(event, context):
+def fires_update(event, context):
 
-    # uses event['fire_type'] in case of direct invocation from cloudwatch cron job
-    try:
-        params = event['queryStringParameters']
-        fire_type = params.get('fire_type').upper()
-    except KeyError:
-        fire_type = event['fire_type']
-        params = {}
+    print event
 
-    today = datetime.datetime.now()
-    yesterday = (today - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-    fire_date = params.get('fire_date', yesterday)
+    # capture newly created csv so we can download
+    new_fires = event['Records'][0]['s3']['object']['key']  #alerts-tsv/fires/temp/es_VIIRS_new_fires_2018-07-09-16-15.csv
 
-    combined_s3_file = combine_fires_s3.combine(fire_type, fire_date)
+    new_fires_s3 = 's3://{}'.format(new_fires)
 
-    invoke_event = {'queryStringParameters': {'fire_csv': combined_s3_file, 'fire_type': fire_type}}
-    client.invoke(FunctionName='fire-alerts-dev-bulk-fire-upload', InvocationType='Event', Payload=json.dumps(invoke_event))
+    # insert new fires (iterate over fires < 10 days ago and if they are, insert)
 
+    # delete old fires (anything older than 10 days ago)
+    # upload modified gpkg (overwrite existing)
+
+    # today = datetime.datetime.now()
+    # yesterday = (today - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    # fire_date = params.get('fire_date', yesterday)
+
+    # combined_s3_file = combine_fires_s3.combine(new_fires_s3, fires_gpkg)
+
+    gpkg_etl.update_geopackage(new_fires_s3)
+    #
+    # invoke_event = {'queryStringParameters': {'fire_csv': combined_s3_file, 'fire_type': fire_type}}
+    # client.invoke(FunctionName='fire-alerts-dev-bulk-fire-upload', InvocationType='Event', Payload=json.dumps(invoke_event))
+    #
     return None
 
 
@@ -132,12 +137,51 @@ if __name__ == '__main__':
 
     aoi = {"type": "FeatureCollection", "name": "test_geom", "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } }, "features": [ { "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 19.607011190476182, -8.765827380952395 ], [ 25.652106428571422, -14.702001984126998 ], [ 25.652106428571422, -14.702001984126998 ], [ 21.485892142857136, -19.848501984126997 ], [ 14.406050873015866, -17.397787698412714 ], [ 14.215439761904756, -11.162081349206364 ], [ 19.607011190476182, -8.765827380952395 ] ] ] } } ] }
 
-    # why this crazy structure? Oh lambda . . . sometimes I wonder
-    fire_csv = 's3://gfw2-data/alerts-tsv/temp/fires-temp-10.csv'
-    fire_data = [{'lat': '53.01', 'lon': '127.24700000000001', 'fire_type': 'MODIS', 'fire_date': '2016-04-30'}]
     event = {
-            'body': json.dumps({'geojson': aoi, 'fire_data': fire_data, 'fire_csv': fire_csv}),
-            'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'fire_type': 'all', 'period': '2017-06-25,2018-07-02'}
+   "Records":[
+      {
+         "eventVersion":"2.0",
+         "eventSource":"aws:s3",
+         "awsRegion":"us-west-2",
+         "eventTime":"1970-01-01T00:00:00.000Z",
+         "eventName":"ObjectCreated:Put",
+         "userIdentity":{
+            "principalId":"AIDAJDPLRKLG7UEXAMPLE"
+         },
+         "requestParameters":{
+            "sourceIPAddress":"127.0.0.1"
+         },
+         "responseElements":{
+            "x-amz-request-id":"C3D13FE58DE4C810",
+            "x-amz-id-2":"FMyUVURIY8/IgAtTv8xRjskZQpcIZ9KG4V5Wp6S7S/JRWeUWerMUE5JgHvANOjpD"
+         },
+         "s3":{
+            "s3SchemaVersion":"1.0",
+            "configurationId":"testConfigRule",
+            "bucket":{
+               "name":"sourcebucket",
+               "ownerIdentity":{
+                  "principalId":"A3NL1KOZZKExample"
+               },
+               "arn":"arn:aws:s3:::sourcebucket"
+            },
+            "object":{
+               "key":"HappyFace.jpg",
+               "size":1024,
+               "eTag":"d41d8cd98f00b204e9800998ecf8427e",
+               "versionId":"096fKKXTRTtl3on89fVO.nfljtsv6qko"
             }
+         }
+      }
+   ]
+}
 
-    print fire_alerts(event, None)
+    # why this crazy structure? Oh lambda . . . sometimes I wonder
+    # fire_csv = 's3://gfw2-data/alerts-tsv/temp/fires-temp-10.csv'
+    # fire_data = [{'lat': '53.01', 'lon': '127.24700000000001', 'fire_type': 'MODIS', 'fire_date': '2016-04-30'}]
+    # event = {
+    #         'body': json.dumps({'geojson': aoi, 'fire_data': fire_data, 'fire_csv': fire_csv}),
+    #         'queryStringParameters': {'aggregate_by':'day', 'layer': 'glad', 'aggregate_values': 'true', 'fire_type': 'all', 'period': '2017-06-25,2018-07-02'}
+    #         }
+
+    print fires_update(event, None)

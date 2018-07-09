@@ -15,7 +15,13 @@ provider:
          - "s3:*"
       Resource:
          - 'arn:aws:s3:::palm-risk-poc'
-
+    -  Effect: "Allow"
+       Action:
+         - "s3:PutBucketNotification"
+       Resource:
+         Fn::Join:
+           - ""
+           - - "arn:aws:s3:::gfw2-data"
 package:
   artifact: lambda-deploy.zip
 
@@ -25,14 +31,6 @@ functions:
     events:
         - http:
             path: fire-alerts
-            method: post
-            cors: true
-
-  fire-analysis:
-    handler: handler.fire_analysis
-    events:
-        - http:
-            path: fire-analysis
             method: post
             cors: true
 
@@ -53,16 +51,6 @@ functions:
   grid-geom:
     handler: handler.grid_geom
 
-  nightly-fires-update:
-    handler: handler.nightly_fires_update
-    events:
-      - schedule:
-          # run at 12:05 UTC 
-          rate: cron(5 0 * * ? *)
-          input:
-            fire_type: VIIRS
-        # run at 12:15 UTC
-      - schedule:
-          rate: cron(15 0 * * ? *)
-          input:
-            fire_type: MODIS
+  fires-update:
+    handler: handler.fires_update
+

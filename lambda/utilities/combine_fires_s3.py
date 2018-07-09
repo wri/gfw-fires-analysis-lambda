@@ -5,6 +5,8 @@ from urlparse import urlparse
 
 import boto3
 
+import gpkg_etl
+
 s3 = boto3.resource('s3')
 
 
@@ -48,44 +50,35 @@ def get_bucket_and_prefix(s3_dir):
     return bucket, prefix
 
 
-def combine(fire_type, fire_date):
-
-    s3_dir = 's3://gfw2-data/fires/fires_for_elasticsearch/{}/'.format(fire_type)
-
-    csv_list = filter_s3_dir_by_date(s3_dir, fire_type, fire_date)
-
-    bucket, prefix = get_bucket_and_prefix(s3_dir)
-
-    # create out CSV text string
-    out_csv = io.BytesIO()
-    writer = csv.writer(out_csv)
-
-    # write header row
-    writer.writerow(['LATITUDE', 'LONGITUDE', 'ACQ_DATE', 'FIRE_TYPE'])
-
-    # iterate over the file list, reading each in as string
-    for s3_csv in csv_list:
-        key = '{}{}'.format(prefix, s3_csv)
-
-        # https://stackoverflow.com/a/35376156/4355916
-        print key
-        obj = s3.Object(bucket.name, key)
-        lines = obj.get()['Body'].read().splitlines()
-
-        reader = csv.DictReader(lines)
-        for row in reader:
-
-            # format row date into m/d/Y expected later on
-            row_date = datetime.datetime.strptime(row['fire_datetime'], '%Y/%m/%d %H:%M:%S')
-            row_date_fmt = row_date.strftime('%Y/%m/%d')
-
-            writer.writerow([row['latitude'], row['longitude'], row_date_fmt, fire_type])
-
-    output_bucket = 'palm-risk-poc'
-    output_key = 'data/fires-export/{}-{}.csv'.format(fire_type, fire_date)
-       
-    s3_output = s3.Object(output_bucket, output_key)
-    s3_output.put(Body=out_csv.getvalue())
-
-    return 's3://{}/{}'.format(output_bucket, output_key)
+# def combine(new_fires_s3):
+#
+#     local_gpkg = gpkg_etl.download_gpkg()
+#
+#     # copy old data into new GPKG, then append new data
+#     updated_gpkg = gpkg_etl.update_geopackage(local_gpkg, new_fires_s3)
+#
+#
+#     # create out CSV text string
+#     out_csv = io.BytesIO()
+#     writer = csv.writer(out_csv)
+#
+#     # write header row
+#     writer.writerow(['LATITUDE', 'LONGITUDE', 'ACQ_DATE', 'FIRE_TYPE'])
+#
+#     reader = csv.DictReader(lines)
+#     for row in reader:
+#
+#         # format row date into m/d/Y expected later on
+#         row_date = datetime.datetime.strptime(row['fire_datetime'], '%Y/%m/%d %H:%M:%S')
+#         row_date_fmt = row_date.strftime('%Y/%m/%d')
+#
+#         writer.writerow([row['latitude'], row['longitude'], row_date_fmt, fire_type])
+#
+#     output_bucket = 'palm-risk-poc'
+#     output_key = 'data/fires-export/{}-{}.csv'.format(fire_type, fire_date)
+#
+#     s3_output = s3.Object(output_bucket, output_key)
+#     s3_output.put(Body=out_csv.getvalue())
+#
+#     return 's3://{}/{}'.format(output_bucket, output_key)
 
