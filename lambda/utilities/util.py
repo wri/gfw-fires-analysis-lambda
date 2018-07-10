@@ -3,8 +3,10 @@ import datetime
 import subprocess
 import os
 from dateutil.relativedelta import relativedelta
+from datetime import timedelta, datetime
 from collections import defaultdict
 from functools import partial
+import csv
 
 from shapely.ops import transform
 from shapely.geometry import shape
@@ -209,3 +211,79 @@ def s3_download(path):
     file = path.split('/')[-1:]
     if os.path.exists(file):
         return file
+
+
+def create_vrt(in_csv):
+    lyr_name = in_csv.strip(".csv")
+    lyr_name = lyr_name.split("/")[-1:][0]
+    fires_vrt = '/tmp/fires.vrt'
+    vrt_text = '''<OGRVRTDataSource>
+                    <OGRVRTLayer name="{0}">
+                    <SrcDataSource relativeToVRT="1">{0}.csv</SrcDataSource>
+                    <GeometryType>wkbPoint</GeometryType>
+                    <LayerSRS>WGS84</LayerSRS>
+                    <GeometryField encoding="PointFromColumns" x="longitude" y="latitude"/>
+                  </OGRVRTLayer>
+                </OGRVRTDataSource>'''.format(lyr_name)
+
+    with open(fires_vrt, 'w') as thefile:
+        thefile.write(vrt_text)
+
+    return fires_vrt
+
+
+def fix_csv_date_lines(in_lines):
+    date_10_days_ago = datetime.now() - timedelta(days=10)
+
+    new_rows_list = []
+    for line in in_lines:
+        lat = line['latitude']
+        long = line['longitude']
+
+        fire_date = line['fire_datetime']
+        formatted_date = datetime.strptime(fire_date, '%Y/%m/%d %H:%M:%S')
+        if formatted_date >= date_10_days_ago:
+            new_date = formatted_date.date().strftime('%Y-%m-%d')
+            new_row = [lat, long, new_date]
+            new_rows_list.append(new_row)
+
+    fires_formatted = '/tmp/fires_formatted.csv'
+    fires_formatted_date = open(fires_formatted, 'w')
+    writer = csv.writer(fires_formatted_date)
+    writer.writerow(["latitude", "longitude", "fire_datetime"])
+    writer.writerows(new_rows_list)
+
+    fires_formatted_date.close()
+
+    return fires_formatted
+
+
+def fix_csv_date(in_csv):
+    date_10_days_ago = datetime.now() - timedelta(days=10)
+
+    new_rows_list= []
+    fires = open(in_csv, 'r')
+    reader = csv.reader(fires)
+    next(reader, None)
+    print "reading and fixing date"
+    for row in reader:
+        fire_date = row[12]
+        formatted_date = datetime.strptime(fire_date, '%Y/%m/%d %H:%M:%S')
+
+        if formatted_date >= date_10_days_ago:
+            new_date = formatted_date.date().strftime('%Y-%m-%d')
+
+            new_row = [row[0], row[1], new_date]
+            new_rows_list.append(new_row)
+
+    fires.close()
+
+    fires_formatted = 'fires_formatted.csv'
+    fires_formatted_date = open(fires_formatted, 'wb')
+    writer = csv.writer(fires_formatted_date)
+    writer.writerow(["latitude", "longitude", "fire_datetime"])
+    writer.writerows(new_rows_list)
+
+    fires_formatted_date.close()
+
+    return fires_formatted

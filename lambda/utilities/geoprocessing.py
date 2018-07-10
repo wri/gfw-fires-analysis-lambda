@@ -1,33 +1,14 @@
 import datetime
-import subprocess
-import json
 
 from shapely.geometry import shape, Polygon
 import fiona
 import boto3
-
 
 # https://stackoverflow.com/a/31602136/4355916
 from gevent import monkey
 monkey.patch_all()
 
 import util, gpkg_etl
-
-
-def find_tiles(geom):
-
-    tiles = 's3://palm-risk-poc/data/fires-one-by-one/index.geojson'
-    int_tiles = []
-
-    with fiona.open(tiles, 'r', 'GeoJSON') as tiles:
-        for tile in tiles:
-            if shape(tile['geometry']).intersects(geom):
-                tile_dict = tile['properties']
-                tile_name = tile_dict['ID']
-
-                int_tiles.append(tile_name)
-
-    return int_tiles
 
 
 def check_layer_coverage(layer, geom):
@@ -53,7 +34,7 @@ def check_layer_coverage(layer, geom):
 
 def point_stats(geom, period, local_gpkg=None):
 
-    # returns fire points within aoi
+    # returns fire points and date counts within aoi
     date_counts = {}
 
     if not local_gpkg:
@@ -72,8 +53,6 @@ def point_stats(geom, period, local_gpkg=None):
                     date_counts[fire_date] += 1
                 except KeyError:
                     date_counts[fire_date] = 1
-
-    # looks like {datetime.date(2017, 8, 28): 823}
 
     return date_counts
 

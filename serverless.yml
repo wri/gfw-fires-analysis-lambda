@@ -42,15 +42,6 @@ functions:
             method: post
             cors: true
 
-  bulk-fire-upload:
-    handler: handler.bulk_fire_upload
-
-  update-fire-tile:
-    handler: handler.update_fire_tile
-
-  grid-geom:
-    handler: handler.grid_geom
-
   fires-update:
     handler: handler.fires_update
 

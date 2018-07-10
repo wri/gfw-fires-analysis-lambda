@@ -3,8 +3,6 @@ import json
 
 def http_response(response):
 
-    # print json.dumps(response, indent=4, sort_keys=True)
-
     return {
         'statusCode': 200,
         'headers': {'Access-Control-Allow-Origin': '*'},
@@ -54,7 +52,3 @@ def serialize_layer_extent(layer, geom_is_valid):
     }
 
     return http_response(serialized)
-
-
-
-
