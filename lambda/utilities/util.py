@@ -95,25 +95,6 @@ def grouped_and_to_rows(keys, vals, agg_type):
     return final_list
 
 
-def clean_fire_type_input(fire_type):
-
-    valid_fire_list = ['viirs', 'modis', 'all']
-
-    if fire_type:
-        if fire_type.lower() in valid_fire_list:
-            return fire_type.lower()
-        else:
-            msg = 'For this batch service, fire_type must be one of {}'.format(', '.join(valid_fire_list))
-            raise ValueError(msg)
-
-    else:
-        return "all"
-
-    if fire_type not in fire_options or valid_type != True:
-
-        return gfw_api.api_error(msg)
-
-
 def get_polygon_area(geom):
     # source: https://gis.stackexchange.com/a/166421/30899
 
@@ -138,7 +119,7 @@ def validate_params(event):
     if not params:
         params = {}
 
-    today = datetime.datetime.now().date()
+    today = datetime.now().date()
 
     # include last year - one day, because today's update will come at the end of the day
     # so if today is May 5 2018, want to include data from May 4 2017, because we
@@ -170,14 +151,6 @@ def validate_params(event):
     if agg_by not in agg_by_options:
         raise ValueError('You must supply an aggregate_by param: {}'.format(', '.join(agg_by_options)))
 
-    # if fire type not supplied, set to all (modis and viirs)
-    fire_type = params.get('fire_type')
-    if not fire_type:
-        raise ValueError('fire_type query parameter must be set')
-
-    # if fire type is misspelled, correct it
-    params['fire_type'] = clean_fire_type_input(fire_type)
-
     return params
 
 
@@ -199,8 +172,8 @@ def check_dates(period, last_8_days):
 def period_to_dates(period):
 
     start_date, end_date = period.split(',')
-    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
-    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
 
     return start_date, end_date
 
@@ -242,15 +215,21 @@ def fix_csv_date_lines(in_lines):
 
         fire_date = line['fire_datetime']
         formatted_date = datetime.strptime(fire_date, '%Y/%m/%d %H:%M:%S')
+
         if formatted_date >= date_10_days_ago:
             new_date = formatted_date.date().strftime('%Y-%m-%d')
             new_row = [lat, long, new_date]
             new_rows_list.append(new_row)
 
     fires_formatted = '/tmp/fires_formatted.csv'
+    # fires_formatted = 'fires_formatted.csv'
     fires_formatted_date = open(fires_formatted, 'w')
     writer = csv.writer(fires_formatted_date)
-    writer.writerow(["latitude", "longitude", "fire_datetime"])
+
+    # write header
+    writer.writerow(["latitude", "longitude", "fire_date"])
+
+    # write all data
     writer.writerows(new_rows_list)
 
     fires_formatted_date.close()

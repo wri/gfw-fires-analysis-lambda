@@ -26,7 +26,7 @@ def serialize_fire_alerts(date_list, params):
             "value": date_list},
         "period": params['period'],
         "type": "fire-alerts",
-        "fire-type": params['fire_type']
+        "fire-type": "VIIRS"
         }
     }
 

@@ -1,6 +1,7 @@
 import subprocess
 import csv
 import sqlite3
+import sys
 import os
 
 from datetime import timedelta, datetime
@@ -43,7 +44,6 @@ def download_gpkg():
 
     gpkg_src = 'data/fires-one-gpkg/data.gpkg'
     local_gpkg = '/tmp/data.gpkg'
-
     bucket.download_file(gpkg_src, local_gpkg)
 
     return local_gpkg
@@ -52,6 +52,7 @@ def download_gpkg():
 def delete_dups_and_old_fires(src_gpkg):
     # get the date of 10 days ago
     date_10_days_ago = datetime.now() - timedelta(days=10)
+    date_10_days_ago = date_10_days_ago.strftime('%Y-%m-%d')
 
     # connect to GPKG and delete any duplicate data
     conn = sqlite3.connect(src_gpkg)
@@ -65,7 +66,7 @@ def delete_dups_and_old_fires(src_gpkg):
     cur.execute(sql_str)
 
     delete_old_fires_sql = ('DELETE FROM data '
-                            'WHERE fire_date < "{}"'.format(date_10_days_ago))
+                            'WHERE fire_date <= "{}"'.format(date_10_days_ago))
 
     cur.execute(delete_old_fires_sql)
     conn.commit()

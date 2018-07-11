@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import json
 
 # add path to included packages
 path = os.path.dirname(os.path.realpath(__file__))
@@ -69,11 +70,32 @@ if __name__ == '__main__':
 
     # aoi = {"type": "FeatureCollection", "name": "test_geom", "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } }, "features": [ { "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 19.607011190476182, -8.765827380952395 ], [ 25.652106428571422, -14.702001984126998 ], [ 25.652106428571422, -14.702001984126998 ], [ 21.485892142857136, -19.848501984126997 ], [ 14.406050873015866, -17.397787698412714 ], [ 14.215439761904756, -11.162081349206364 ], [ 19.607011190476182, -8.765827380952395 ] ] ] } } ] }
 
-    event = {"Records":[
-            {"s3":{
-                "bucket": {"name": "gfw2-data"},
-                "object": {"key": "/alerts-tsv/fires/temp/es_VIIRS_new_fires_2018-07-09-16-15.csv"}
-            }
-      }]}
+    # event = {"Records":[
+    #         {"s3":{
+    #             "bucket": {"name": "gfw2-data"},
+    #             "object": {"key": "/alerts-tsv/fires/temp/es_VIIRS_new_fires_2018-07-09-16-15.csv"}
+    #         }
+    #   }]}
+    aoi = {"type": "FeatureCollection", "name": "test_geom",
+               "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}}, "features": [
+                {"type": "Feature", "properties": {"id": 1}, "geometry": {"type": "Polygon", "coordinates": [
+                    [[19.607011190476182, -8.765827380952395], [25.652106428571422, -14.702001984126998],
+                     [25.652106428571422, -14.702001984126998], [21.485892142857136, -19.848501984126997],
+                     [14.406050873015866, -17.397787698412714], [14.215439761904756, -11.162081349206364],
+                     [19.607011190476182, -8.765827380952395]]]}}]}
 
-    print fires_update(event, None)
+    # aoi = {"type": "FeatureCollection", "name": "test_geom",
+    #            "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}}, "features": [
+    #             {"type": "Feature", "properties": {"id": 1}, "geometry": {"type": "Polygon", "coordinates": [
+    #                 [[94.833984375, -3.9519408561575817], [122.16796875, -3.9519408561575817], [122.16796875, 4.8282597468669755], [
+    #     94.833984375, 4.8282597468669755], [94.833984375, -3.9519408561575817]]]}}]}
+
+
+
+
+    event = {
+            'body': json.dumps({'geojson': aoi}),
+            'queryStringParameters': {'aggregate_by':'day', 'aggregate_values': 'true'}
+            }
+
+    print fire_alerts(event, None)

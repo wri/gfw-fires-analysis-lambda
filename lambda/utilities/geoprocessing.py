@@ -45,10 +45,12 @@ def point_stats(geom, period, local_gpkg=None):
     with fiona.open(local_gpkg, layer='data') as src:
 
         for pt in src.filter(bbox=geom.bounds):
+
             fire_geom = shape(pt['geometry'])
             fire_date = datetime.datetime.strptime(pt['properties']['fire_date'], '%Y-%m-%d').date()
 
             if (end_date >= fire_date >= start_date) and fire_geom.intersects(geom):
+
                 try:
                     date_counts[fire_date] += 1
                 except KeyError:
