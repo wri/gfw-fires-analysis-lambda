@@ -10,21 +10,21 @@ def http_response(response):
             }
 
 
-def serialize_fire_alerts(date_list, params):
+def serialize_fire_alerts(date_list):
 
-    agg_by = params['aggregate_by']
-
-    if agg_by != 'all':
-        date_list = date_list[agg_by]
+    # agg_by = params['aggregate_by']
+    #
+    # if agg_by != 'all':
+    #     date_list = date_list[agg_by]
 
     serialized = {
     "data": {
-        "aggregate_by": agg_by,
+        "aggregate_by": 'day',
         "aggregate_values": True,
         "attributes": {
             "downloadUrls": None,
             "value": date_list},
-        "period": params['period'],
+        # "period": params['period'],
         "type": "fire-alerts",
         "fire-type": "VIIRS"
         }

@@ -43,41 +43,6 @@ class TestBogusInputs(TestCase):
 
         return result_message
 
-    def test_start_date_after_end_date(self):
-        payload = copy.deepcopy(self.payload)
-
-        today = datetime.datetime.now().date()
-        last_month = today - relativedelta(months=1)
-
-        # should be last_month date, then today
-        period = today.strftime('%Y-%m-%d') + ',' + last_month.strftime('%Y-%m-%d')
-        payload['queryStringParameters']['period'] = period
-
-        self.assertEqual(self.run_fire_alerts(payload), 'Start date must be <= end date')
-
-    def test_bogus_period(self):
-        payload = copy.deepcopy(self.payload)
-
-        today = datetime.datetime.now().date()
-        last_month = today - relativedelta(months=1)
-
-        # proper strftime format is '%Y-%m-%d'
-        period = last_month.strftime('%y-%m-%d') + ',' + today.strftime('%y-%m-%d')
-        payload['queryStringParameters']['period'] = period
-
-        self.assertEqual(self.run_fire_alerts(payload), 'period must be formatted as YYYY-mm-dd,YYYY-mm-dd')
-
-    def test_start_date_greater_than_8_days(self):
-        payload = copy.deepcopy(self.payload)
-
-        today = datetime.datetime.now().date()
-        period_20_days_ago = today - relativedelta(days=20)
-
-        period = period_20_days_ago.strftime('%Y-%m-%d') + ',' + today.strftime('%Y-%m-%d')
-        payload['queryStringParameters']['period'] = period
-
-        self.assertEqual(self.run_fire_alerts(payload), 'Start date must be more recent than 8 days ago')
-
     def test_bad_geom(self):
         aoi = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[114.2578125,2.4601811810210052]}}]}
 
@@ -108,7 +73,7 @@ class TestBogusInputs(TestCase):
         payload = copy.deepcopy(self.payload)
         payload['queryStringParameters']['aggregate_by'] = 'werk'
 
-        self.assertEqual(self.run_fire_alerts(payload), 'You must supply an aggregate_by param: year, quarter, month, week, day, all')
+        self.assertEqual(self.run_fire_alerts(payload), 'You must supply an aggregate_by param: day')
 
     def test_agg_values_false(self):
         payload = copy.deepcopy(self.payload)

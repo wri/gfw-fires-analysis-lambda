@@ -25,20 +25,21 @@ client = boto3.client('lambda', region_name='us-east-1')
 
 def fire_alerts(event, context):
 
+    # set period
+    period = util.set_period()
+
     try:
         geom = util.get_shapely_geom(event)
         params = util.validate_params(event)
     except ValueError, e:
         return serializers.api_error(str(e))
 
-    period = event['queryStringParameters']['period']
+    date_count_dict = geoprocessing.point_stats(geom, period)  # {datetime.date(2018, 7, 10): 4392, datetime.date(2
 
-    date_count_dict = geoprocessing.point_stats(geom, period)  # looks like {'2016-05-09': 15, '2016-05-10': 200}
-
-    # aggregate by day, year, month, etc
+    # put list of {date: count} into list with keys, values
     resp_dict = geoprocessing.create_resp_dict(date_count_dict)
 
-    return serializers.serialize_fire_alerts(resp_dict, params)
+    return serializers.serialize_fire_alerts(resp_dict)
 
 
 def fires_update(event, context):
@@ -68,14 +69,6 @@ def validate_layer_extent(event, context):
 
 if __name__ == '__main__':
 
-    # aoi = {"type": "FeatureCollection", "name": "test_geom", "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } }, "features": [ { "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 19.607011190476182, -8.765827380952395 ], [ 25.652106428571422, -14.702001984126998 ], [ 25.652106428571422, -14.702001984126998 ], [ 21.485892142857136, -19.848501984126997 ], [ 14.406050873015866, -17.397787698412714 ], [ 14.215439761904756, -11.162081349206364 ], [ 19.607011190476182, -8.765827380952395 ] ] ] } } ] }
-
-    # event = {"Records":[
-    #         {"s3":{
-    #             "bucket": {"name": "gfw2-data"},
-    #             "object": {"key": "/alerts-tsv/fires/temp/es_VIIRS_new_fires_2018-07-09-16-15.csv"}
-    #         }
-    #   }]}
     aoi = {"type": "FeatureCollection", "name": "test_geom",
                "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}}, "features": [
                 {"type": "Feature", "properties": {"id": 1}, "geometry": {"type": "Polygon", "coordinates": [
@@ -83,15 +76,6 @@ if __name__ == '__main__':
                      [25.652106428571422, -14.702001984126998], [21.485892142857136, -19.848501984126997],
                      [14.406050873015866, -17.397787698412714], [14.215439761904756, -11.162081349206364],
                      [19.607011190476182, -8.765827380952395]]]}}]}
-
-    # aoi = {"type": "FeatureCollection", "name": "test_geom",
-    #            "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}}, "features": [
-    #             {"type": "Feature", "properties": {"id": 1}, "geometry": {"type": "Polygon", "coordinates": [
-    #                 [[94.833984375, -3.9519408561575817], [122.16796875, -3.9519408561575817], [122.16796875, 4.8282597468669755], [
-    #     94.833984375, 4.8282597468669755], [94.833984375, -3.9519408561575817]]]}}]}
-
-
-
 
     event = {
             'body': json.dumps({'geojson': aoi}),

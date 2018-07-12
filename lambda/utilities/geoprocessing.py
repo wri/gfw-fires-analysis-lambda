@@ -1,5 +1,5 @@
 import datetime
-
+from datetime import timedelta, datetime
 from shapely.geometry import shape, Polygon
 import fiona
 import boto3
@@ -47,7 +47,7 @@ def point_stats(geom, period, local_gpkg=None):
         for pt in src.filter(bbox=geom.bounds):
 
             fire_geom = shape(pt['geometry'])
-            fire_date = datetime.datetime.strptime(pt['properties']['fire_date'], '%Y-%m-%d').date()
+            fire_date = datetime.strptime(pt['properties']['fire_date'], '%Y-%m-%d').date()
 
             if (end_date >= fire_date >= start_date) and fire_geom.intersects(geom):
 
@@ -64,13 +64,6 @@ def create_resp_dict(date_dict):
     alert_date = date_dict.keys()  # alert date = datetime.datetime(2015, 6, 4, 0, 0)
     alert_count = date_dict.values()  # count
 
-    resp_dict = {
-                 'year': util.grouped_and_to_rows([x.year for x in alert_date], alert_count, 'year'),
-                 # month --> quarter calc: https://stackoverflow.com/questions/1406131
-                 'quarter': util.grouped_and_to_rows([(x.year, (x.month-1)//3 + 1) for x in alert_date], alert_count, 'quarter'),
-                 'month':  util.grouped_and_to_rows([(x.year, x.month) for x in alert_date], alert_count, 'month'),
-                 'week': util.grouped_and_to_rows([(x.year, x.isocalendar()[1]) for x in alert_date], alert_count, 'week'),
-                 'day': util.grouped_and_to_rows([(x.year, x.strftime('%Y-%m-%d')) for x in alert_date], alert_count, 'day')
-                }
+    resp_dict = util.grouped_and_to_rows([(x.strftime('%Y-%m-%d')) for x in alert_date], alert_count, 'day')
 
     return resp_dict
