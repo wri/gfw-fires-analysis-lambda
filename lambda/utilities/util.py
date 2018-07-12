@@ -1,8 +1,12 @@
 import json
 import datetime
+import subprocess
+import os
 from dateutil.relativedelta import relativedelta
+from datetime import timedelta, datetime
 from collections import defaultdict
 from functools import partial
+import csv
 
 from shapely.ops import transform
 from shapely.geometry import shape
@@ -80,34 +84,13 @@ def grouped_and_to_rows(keys, vals, agg_type):
 
     for key, val in grouped.iteritems():
 
-        if agg_type == 'year':
-	    row = {agg_type: key}
-        else:
-            row = {'year': key[0], agg_type: key[1]}
-
+        row = {'day': key}
         row['count'] = val
         final_list.append(row)
 
+        final_list = sorted(final_list, key=lambda k: k['day'])
+
     return final_list
-
-
-def clean_fire_type_input(fire_type):
-
-    valid_fire_list = ['viirs', 'modis', 'all']
-
-    if fire_type:
-        if fire_type.lower() in valid_fire_list:
-            return fire_type.lower()
-        else:
-            msg = 'For this batch service, fire_type must be one of {}'.format(', '.join(valid_fire_list))
-            raise ValueError(msg)
-
-    else:
-        return "all"
-
-    if fire_type not in fire_options or valid_type != True:
-
-        return gfw_api.api_error(msg)
 
 
 def get_polygon_area(geom):
@@ -127,28 +110,22 @@ def get_polygon_area(geom):
     return geom_area.area / 10000.
 
 
+def set_period():
+    today = datetime.now().date()
+
+    # get yesterday + 6 days, a total of 7 days
+    last_8_days = today - relativedelta(days=7)
+    last_1_day = today - relativedelta(days=1)
+
+    return last_8_days.strftime('%Y-%m-%d') + ',' + last_1_day.strftime('%Y-%m-%d')
+
+
 def validate_params(event):
 
     # get query parameters. if none supplied, set to empty dict, that way params.get doesn't throw an error
     params = event.get('queryStringParameters')
     if not params:
         params = {}
-
-    today = datetime.datetime.now().date()
-
-    # include last year - one day, because today's update will come at the end of the day
-    # so if today is May 5 2018, want to include data from May 4 2017, because we
-    # don't have data from May 5 2018 in our GPKGs yet
-    last_year = today - relativedelta(years=1, days=1)
-    default_period = last_year.strftime('%Y-%m-%d') + ',' + today.strftime('%Y-%m-%d')
-
-    period = params.get('period', default_period)
-    params['period'] = period
-
-    try:
-        check_dates(period, last_year)
-    except ValueError, e:
-        raise ValueError(e)
 
     # get agg values parameter. if not specified, set to false
     agg_values = params.get('aggregate_values', False)
@@ -162,40 +139,68 @@ def validate_params(event):
 
     # if user does not supply correct/spelling of agg_by params, raise error
     agg_by = params.get('aggregate_by')
-    agg_by_options = ['year', 'quarter', 'month', 'week', 'day', 'all']
+    agg_by_options = ['day']
     if agg_by not in agg_by_options:
         raise ValueError('You must supply an aggregate_by param: {}'.format(', '.join(agg_by_options)))
 
-    # if fire type not supplied, set to all (modis and viirs)
-    fire_type = params.get('fire_type')
-    if not fire_type:
-        raise ValueError('fire_type query parameter must be set')
-
-    # if fire type is misspelled, correct it
-    params['fire_type'] = clean_fire_type_input(fire_type)
-
     return params
-
-
-def check_dates(period, last_year):
-
-    try:
-        start_date, end_date = period_to_dates(period)
-
-    except ValueError:
-        raise ValueError('period must be formatted as YYYY-mm-dd,YYYY-mm-dd')
-
-    if start_date > end_date:
-        raise ValueError('Start date must be <= end date')
-
-    if start_date < last_year:
-        raise ValueError('Start date must be more recent than one year ago')
 
 
 def period_to_dates(period):
 
     start_date, end_date = period.split(',')
-    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
-    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
 
     return start_date, end_date
+
+
+def create_vrt(in_csv):
+    lyr_name = in_csv.strip(".csv")
+    lyr_name = lyr_name.split("/")[-1:][0]
+    fires_vrt = '/tmp/fires.vrt'
+    vrt_text = '''<OGRVRTDataSource>
+                    <OGRVRTLayer name="{0}">
+                    <SrcDataSource relativeToVRT="1">{0}.csv</SrcDataSource>
+                    <GeometryType>wkbPoint</GeometryType>
+                    <LayerSRS>WGS84</LayerSRS>
+                    <GeometryField encoding="PointFromColumns" x="longitude" y="latitude"/>
+                  </OGRVRTLayer>
+                </OGRVRTDataSource>'''.format(lyr_name)
+
+    with open(fires_vrt, 'w') as thefile:
+        thefile.write(vrt_text)
+
+    return fires_vrt
+
+
+def fix_csv_date_lines(in_lines):
+    date_10_days_ago = datetime.now() - timedelta(days=10)
+
+    new_rows_list = []
+    for line in in_lines:
+        lat = line['latitude']
+        long = line['longitude']
+
+        fire_date = line['fire_datetime']
+        formatted_date = datetime.strptime(fire_date, '%Y/%m/%d %H:%M:%S')
+
+        if formatted_date >= date_10_days_ago:
+            new_date = formatted_date.date().strftime('%Y-%m-%d')
+            new_row = [lat, long, new_date]
+            new_rows_list.append(new_row)
+
+    fires_formatted = '/tmp/fires_formatted.csv'
+    # fires_formatted = 'fires_formatted.csv'
+    fires_formatted_date = open(fires_formatted, 'w')
+    writer = csv.writer(fires_formatted_date)
+
+    # write header
+    writer.writerow(["latitude", "longitude", "fire_date"])
+
+    # write all data
+    writer.writerows(new_rows_list)
+
+    fires_formatted_date.close()
+
+    return fires_formatted

@@ -5,8 +5,9 @@ DEPLOY_DIR=lambda
 
 PYVER=${1:-2.7}
 
-# copy gdal_translate utility
-cp /usr/local/bin/gdal_translate $DEPLOY_DIR/lib/
+# copy ogr2ogr utility
+mkdir -p $DEPLOY_DIR/lib/
+cp /usr/local/bin/ogr2ogr $DEPLOY_DIR/lib/
 
 # make deployment directory and add lambda handler
 mkdir -p $DEPLOY_DIR/lib/python$PYVER/site-packages
