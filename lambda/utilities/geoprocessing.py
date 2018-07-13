@@ -1,5 +1,5 @@
 import datetime
-from datetime import timedelta, datetime
+from datetime import datetime
 from shapely.geometry import shape, Polygon
 import fiona
 import boto3

@@ -1,7 +1,6 @@
 import subprocess
 import csv
 import sqlite3
-import sys
 import os
 
 from datetime import timedelta, datetime

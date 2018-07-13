@@ -1,7 +1,5 @@
 import json
 import datetime
-import subprocess
-import os
 from dateutil.relativedelta import relativedelta
 from datetime import timedelta, datetime
 from collections import defaultdict
@@ -120,12 +118,49 @@ def set_period():
     return last_8_days.strftime('%Y-%m-%d') + ',' + last_1_day.strftime('%Y-%m-%d')
 
 
+def check_dates(period, last_8_days):
+
+    try:
+        start_date, end_date = period_to_dates(period)
+
+    except ValueError:
+        raise ValueError('period must be formatted as YYYY-mm-dd,YYYY-mm-dd')
+
+    if start_date > end_date:
+        raise ValueError('Start date must be <= end date')
+
+    if start_date < last_8_days:
+        raise ValueError('Start date must be more recent than 8 days ago')
+
+    today = datetime.now().date()
+    one_day_ago = today - relativedelta(days=1)
+    if start_date > one_day_ago or end_date > one_day_ago:
+        raise ValueError('Period must start and end before today')
+
+
 def validate_params(event):
 
     # get query parameters. if none supplied, set to empty dict, that way params.get doesn't throw an error
     params = event.get('queryStringParameters')
     if not params:
         params = {}
+
+    today = datetime.now().date()
+
+    # include last year - one day, because today's update will come at the end of the day
+    # so if today is May 5 2018, want to include data from May 4 2017, because we
+    # don't have data from May 5 2018 in our GPKGs yet
+    last_8_days = today - relativedelta(days=8)
+    end_day = today - relativedelta(days=1)
+    default_period = last_8_days.strftime('%Y-%m-%d') + ',' + end_day.strftime('%Y-%m-%d')
+
+    period = params.get('period', default_period)
+    params['period'] = period
+
+    try:
+        check_dates(period, last_8_days)
+    except ValueError, e:
+        raise ValueError(e)
 
     # get agg values parameter. if not specified, set to false
     agg_values = params.get('aggregate_values', False)

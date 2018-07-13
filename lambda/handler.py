@@ -26,7 +26,7 @@ client = boto3.client('lambda', region_name='us-east-1')
 def fire_alerts(event, context):
 
     # set period
-    period = util.set_period()
+    # period = util.set_period()
 
     try:
         geom = util.get_shapely_geom(event)
@@ -34,12 +34,14 @@ def fire_alerts(event, context):
     except ValueError, e:
         return serializers.api_error(str(e))
 
+    period = event['queryStringParameters']['period']
+
     date_count_dict = geoprocessing.point_stats(geom, period)  # {datetime.date(2018, 7, 10): 4392, datetime.date(2
 
     # put list of {date: count} into list with keys, values
     resp_dict = geoprocessing.create_resp_dict(date_count_dict)
 
-    return serializers.serialize_fire_alerts(resp_dict)
+    return serializers.serialize_fire_alerts(resp_dict, params)
 
 
 def fires_update(event, context):
@@ -79,7 +81,9 @@ if __name__ == '__main__':
 
     event = {
             'body': json.dumps({'geojson': aoi}),
-            'queryStringParameters': {'aggregate_by':'day', 'aggregate_values': 'true'}
+            'queryStringParameters': {
+                'aggregate_by': 'day',
+                'aggregate_values': 'true'}
             }
 
     print fire_alerts(event, None)

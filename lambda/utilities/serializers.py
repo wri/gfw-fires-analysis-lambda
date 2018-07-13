@@ -10,7 +10,7 @@ def http_response(response):
             }
 
 
-def serialize_fire_alerts(date_list):
+def serialize_fire_alerts(date_list, params):
 
     # agg_by = params['aggregate_by']
     #
@@ -24,7 +24,7 @@ def serialize_fire_alerts(date_list):
         "attributes": {
             "downloadUrls": None,
             "value": date_list},
-        # "period": params['period'],
+        "period": params['period'],
         "type": "fire-alerts",
         "fire-type": "VIIRS"
         }
