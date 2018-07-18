@@ -4,10 +4,6 @@ from shapely.geometry import shape, Polygon
 import fiona
 import boto3
 
-# https://stackoverflow.com/a/31602136/4355916
-from gevent import monkey
-monkey.patch_all()
-
 import util, gpkg_etl
 
 

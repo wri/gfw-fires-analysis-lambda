@@ -88,10 +88,10 @@ def update_geopackage(s3_path):
     src_gpkg = download_gpkg()
 
     # read in csv and write it back with correct format
-    fires_formatted = util.fix_csv_date_lines(fires)
+    new_rows_list = util.fix_csv_date_lines(fires, False)
 
     # make vrt of source fires
-    fires_vrt = util.create_vrt(fires_formatted)
+    fires_vrt = util.create_vrt(new_rows_list)
 
     # append new fires to gpkg
     path = os.path.dirname(os.path.realpath(__file__))

@@ -29,7 +29,7 @@ class TestAnalysis(TestCase):
 
         geom = shape(aoi['features'][0]['geometry'])
         period = '2017-01-01,2018-01-01'
-        local_geopackage = '/home/geolambda/test/data.gpkg'
+        local_geopackage = '/home/geolambda/work/test/data.gpkg'
 
         result = geoprocessing.point_stats(geom, period, local_geopackage)
 

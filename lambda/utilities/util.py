@@ -5,10 +5,16 @@ from datetime import timedelta, datetime
 from collections import defaultdict
 from functools import partial
 import csv
+import io
+import boto3
 
 from shapely.ops import transform
 from shapely.geometry import shape
 import pyproj
+
+from gpkg_etl import s3_to_csv_reader
+
+s3 = boto3.resource('s3')
 
 
 def get_shapely_geom(event):
@@ -190,8 +196,21 @@ def period_to_dates(period):
     return start_date, end_date
 
 
-def create_vrt(in_csv):
-    lyr_name = in_csv.strip(".csv")
+def create_vrt(in_rows):
+
+    fires_formatted = '/tmp/fires_formatted.csv'
+    fires_formatted_date = open(fires_formatted, 'w')
+    writer = csv.writer(fires_formatted_date)
+
+    header_row = ["latitude", "longitude", "fire_date"]
+    writer.writerow(header_row)
+
+    # write all data
+    writer.writerows(in_rows)
+
+    fires_formatted_date.close()
+
+    lyr_name = fires_formatted.strip(".csv")
     lyr_name = lyr_name.split("/")[-1:][0]
     fires_vrt = '/tmp/fires.vrt'
     vrt_text = '''<OGRVRTDataSource>
@@ -209,33 +228,58 @@ def create_vrt(in_csv):
     return fires_vrt
 
 
-def fix_csv_date_lines(in_lines):
+def fix_csv_date_lines(in_lines, fires_export, fire_type=None):
+
+    # a utility to write a new csv with formatted dates
     date_10_days_ago = datetime.now() - timedelta(days=10)
 
-    new_rows_list = []
+    output_rows = []
+
     for line in in_lines:
         lat = line['latitude']
-        long = line['longitude']
+        lon = line['longitude']
 
         fire_date = line['fire_datetime']
         formatted_date = datetime.strptime(fire_date, '%Y/%m/%d %H:%M:%S')
 
-        if formatted_date >= date_10_days_ago:
-            new_date = formatted_date.date().strftime('%Y-%m-%d')
-            new_row = [lat, long, new_date]
-            new_rows_list.append(new_row)
+        new_row = [lat, lon]
 
-    fires_formatted = '/tmp/fires_formatted.csv'
-    # fires_formatted = 'fires_formatted.csv'
-    fires_formatted_date = open(fires_formatted, 'w')
-    writer = csv.writer(fires_formatted_date)
+        # for writting to fires-export, write all rows, not just last 10 days
+        if fires_export:
+            new_date = formatted_date.date().strftime('%Y/%m/%d')
+            new_row += [new_date, fire_type]
+            output_rows.append(new_row)
 
-    # write header
-    writer.writerow(["latitude", "longitude", "fire_date"])
+        else:
+            if formatted_date >= date_10_days_ago:
+                new_date = formatted_date.date().strftime('%Y-%m-%d')
+                new_row += [new_date]
 
-    # write all data
-    writer.writerows(new_rows_list)
+                output_rows.append(new_row)
 
-    fires_formatted_date.close()
+    return output_rows
 
-    return fires_formatted
+
+def write_fires_export(new_fires_s3):
+    # read in csv and write it back with correct format
+    # new_fires_s3 = 's3://gfw2-data/fires/fires_for_elasticsearch/MODIS/es_MODIS_new_fires_2018-07-17-15-15.csv'
+    fire_type = new_fires_s3.split('/')[-2]
+    fire_date = new_fires_s3.split('/')[-1].split('_')[-1]
+    fires = [x for x in csv.DictReader(s3_to_csv_reader(new_fires_s3))]
+
+    new_rows_list = fix_csv_date_lines(fires, True, 'VIIRS')
+
+    output_bucket = 'palm-risk-poc'
+    output_key = 'data/fires-export/{}-{}'.format(fire_type, fire_date)
+
+    # create out CSV text string
+    out_csv = io.BytesIO()
+    writer = csv.writer(out_csv)
+
+    writer.writerow(['LATITUDE', 'LONGITUDE', 'ACQ_DATE', 'FIRE_TYPE'])
+
+    for formatted_fires_row in new_rows_list:
+        writer.writerow(formatted_fires_row)
+
+    s3_output = s3.Object(output_bucket, output_key)
+    s3_output.put(Body=out_csv.getvalue())

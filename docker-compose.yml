@@ -15,11 +15,10 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
-    entrypoint: bash -c 'nosetests --nologcapture -v -s -w /home/geolambda/;'
+    entrypoint: bash -c 'nosetests --nologcapture -v -s -w /home/geolambda/work/test/;'
     env_file: .env
     volumes:
-      - './lambda:/home/geolambda/lambda'
-      - './test:/home/geolambda/test'
+      - '.:/home/geolambda/work'
 
   package:
     build:

@@ -11,14 +11,13 @@ import boto3
 
 from utilities import util, geoprocessing, serializers, gpkg_etl
 
-
 # https://stackoverflow.com/a/2588054/4355916
 root = logging.getLogger()
 if root.handlers:
     for handler in root.handlers:
         root.removeHandler(handler)
 
-logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.ERROR)
 
 client = boto3.client('lambda', region_name='us-east-1')
 
@@ -57,6 +56,30 @@ def fires_update(event, context):
     return None
 
 
+def fires_export(event, context):
+
+    # writes formatted csv to palm-risk-poc/fires-export when new VIIRS added
+
+    # capture newly created csv so we can read it in
+    s3_key_path = event['Records'][0]['s3']['object']['key']  #alerts-tsv/fires/temp/es_VIIRS_new_fires_2018-07-09-16-15.csv
+    bucket_name = event['Records'][0]['s3']['bucket']['name']
+
+    new_fires_s3 = 's3://{0}/{1}'.format(bucket_name, s3_key_path)
+
+    fire_type = new_fires_s3.split('/')[-2]
+
+    # if updated file is VIIRS, also update the geopackage. Invoke the fires_update event
+    if fire_type == 'VIIRS':
+        print "updating viirs data"
+        client.invoke(
+            FunctionName='fire-alerts-dev-fires-update',
+            InvocationType='Event',
+            Payload=json.dumps(event))
+
+    print "exporting new VIIRS and MODIS csv for hadoop"
+    util.write_fires_export(new_fires_s3)
+
+
 def validate_layer_extent(event, context):
 
     try:
@@ -79,11 +102,18 @@ if __name__ == '__main__':
                      [14.406050873015866, -17.397787698412714], [14.215439761904756, -11.162081349206364],
                      [19.607011190476182, -8.765827380952395]]]}}]}
 
-    event = {
+    event_fire_query = {
             'body': json.dumps({'geojson': aoi}),
             'queryStringParameters': {
                 'aggregate_by': 'day',
                 'aggregate_values': 'true'}
             }
 
-    print fire_alerts(event, None)
+    event_fires_export = {"Records":[
+                {"s3":{
+                    "bucket": {"name": "gfw2-data"},
+                    "object": {"key": "fires/fires_for_elasticsearch/VIIRS/es_VIIRS_new_fires_2018-07-10-16-15.csv"}
+                }
+                }]}
+
+    fires_export(event_fires_export, None)

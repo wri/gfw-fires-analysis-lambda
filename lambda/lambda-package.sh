@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo "Running tests"
+nosetests --nologcapture -v -s -w /home/geolambda/work/test/
+
+echo "Packaging"
 # directory used for deployment
 DEPLOY_DIR=lambda
 
@@ -34,3 +38,5 @@ zip -ruq ../lambda-deploy.zip ./
 
 # remove lib dir because we are not using when developing locally
 rm -r lib/
+
+

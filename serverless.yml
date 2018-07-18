@@ -45,3 +45,5 @@ functions:
   fires-update:
     handler: handler.fires_update
 
+  fires-export:
+    handler: handler.fires_export
