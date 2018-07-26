@@ -244,7 +244,7 @@ def fix_csv_date_lines(in_lines, fires_export, fire_type=None):
 
         new_row = [lat, lon]
 
-        # for writting to fires-export, write all rows, not just last 10 days
+        # for writing to fires-export, write all rows, not just last 10 days
         if fires_export:
             new_date = formatted_date.date().strftime('%Y/%m/%d')
             new_row += [new_date, fire_type]
@@ -267,7 +267,7 @@ def write_fires_export(new_fires_s3):
     fire_date = new_fires_s3.split('/')[-1].split('_')[-1]
     fires = [x for x in csv.DictReader(s3_to_csv_reader(new_fires_s3))]
 
-    new_rows_list = fix_csv_date_lines(fires, True, 'VIIRS')
+    new_rows_list = fix_csv_date_lines(fires, True, fire_type)
 
     output_bucket = 'palm-risk-poc'
     output_key = 'data/fires-export/{}-{}'.format(fire_type, fire_date)
