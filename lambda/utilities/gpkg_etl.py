@@ -67,7 +67,7 @@ def delete_dups_and_old_fires(src_gpkg):
     delete_old_fires_sql = ('DELETE FROM data '
                             'WHERE fire_date <= "{}"'.format(date_10_days_ago))
 
-    cur.execute(delete_old_fires_sql)
+    # cur.execute(delete_old_fires_sql)
     conn.commit()
     conn.close()
 
